@@ -28,6 +28,8 @@ var connection_menu := false
 var connection_source_id := -1
 var editing_ip := false
 var ip_buffer := ""
+var editing_name := false
+var name_buffer := ""
 
 func _ready() -> void:
 	randomize()
@@ -44,6 +46,9 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if editing_ip:
 		_handle_ip_input(event)
+		return
+	if editing_name:
+		_handle_name_input(event)
 		return
 
 	if event is InputEventMouseMotion:
@@ -295,9 +300,9 @@ func _context_action_at(pos: Vector2) -> String:
 	if local.y >= 76 and local.y < 110:
 		return "connect"
 	if local.y >= 112 and local.y < 146:
-		return "ip"
+		return "rename"
 	if local.y >= 148 and local.y < 182:
-		return "disconnect"
+		return "ip"
 	return ""
 
 func _perform_context_action(action: String) -> void:
@@ -329,6 +334,8 @@ func _perform_context_action(action: String) -> void:
 		_toggle_selected_power()
 	elif action == "disconnect":
 		_disconnect_ethernet()
+	elif action == "rename":
+		_begin_name_edit(id)
 	elif action == "ip":
 		_begin_ip_edit(id)
 	queue_redraw()
@@ -351,10 +358,10 @@ func _connect_ethernet(source_id: int, target_id: int) -> void:
 		_error("Cannot connect: a computer cannot connect to itself.")
 		return
 	if not source.powered:
-		_error("Cannot connect: " + source.name + " is powered OFF.")
+		_error("This device, " + source.name + ", is powered off.")
 		return
 	if not target.powered:
-		_error("Cannot connect: " + target.name + " is powered OFF.")
+		_error("The destination computer, " + target.name + ", is powered off.")
 		return
 	if ethernet_connected:
 		_error("Cannot connect: the Ethernet cable is already in use. Disconnect it first.")
@@ -408,6 +415,52 @@ func _handle_ip_input(event: InputEvent) -> void:
 			if ip_buffer.length() < 15:
 				ip_buffer += "."
 				queue_redraw()
+
+func _begin_name_edit(id: int) -> void:
+	var d := _get_device(id)
+	if d.is_empty():
+		_error("Cannot rename: device not found.")
+		return
+	name_buffer = d.name
+	editing_name = true
+	_toast("Type a computer name, then press Enter. Esc cancels.")
+	queue_redraw()
+
+func _handle_name_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			editing_name = false
+			queue_redraw()
+			return
+		if event.keycode == KEY_ENTER:
+			_set_selected_name()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			name_buffer = name_buffer.left(max(0, name_buffer.length() - 1))
+			queue_redraw()
+			return
+		if event.unicode >= 32 and event.unicode <= 126 and name_buffer.length() < 24:
+			name_buffer += char(event.unicode)
+			queue_redraw()
+
+func _set_selected_name() -> void:
+	if selected_id == -1:
+		editing_name = false
+		_error("Cannot rename: no computer is selected.")
+		return
+	var clean_name := name_buffer.strip_edges()
+	if clean_name == "":
+		_error("Computer name cannot be empty.")
+		return
+	for d in devices:
+		if d.id != selected_id and d.name.to_lower() == clean_name.to_lower():
+			_error("A computer with the name '" + clean_name + "' already exists.")
+			return
+	var selected_device := _get_device(selected_id)
+	selected_device.name = clean_name
+	editing_name = false
+	_toast("Computer renamed to " + clean_name + ".")
+	queue_redraw()
 
 func _set_selected_ip() -> void:
 	if selected_id == -1:
