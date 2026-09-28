@@ -182,7 +182,7 @@ func _input(event: InputEvent) -> void:
 			else:
 				_begin_ip_edit(selected_id)
 			return
-		elif shortcut_key == KEY_F9:
+		elif shortcut_key == KEY_F7:
 			if selected_id == -1:
 				_error("Cannot inspect: no computer is selected.")
 			else:
@@ -345,9 +345,9 @@ func _draw_inspector(screen: Vector2) -> void:
 	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [F2]")
 	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [F3]")
 	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [F4]")
-	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [F5]")
+	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [F7]")
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 486), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "F6 center   F7 / F8 zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "HOME center   PgUp / PgDn zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
 
 func _draw_inspector_button(panel: Rect2, local_rect: Rect2, label: String) -> void:
 	var r := Rect2(panel.position + local_rect.position, local_rect.size)
