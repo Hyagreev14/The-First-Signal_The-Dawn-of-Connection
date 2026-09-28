@@ -162,6 +162,51 @@ button:hover { background: #11212a; }
 button:active { transform: translateY(1px); }
 button:disabled { opacity: .5; cursor: wait; }
 
+.ip-panel {
+    margin-top: 20px;
+    border: 1px solid #1d2a32;
+    padding: 18px;
+    background: rgba(8, 15, 20, .55);
+}
+
+#ipForm {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+#ipForm label {
+    display: grid;
+    gap: 7px;
+    color: #667984;
+    font-size: .72rem;
+    letter-spacing: .12em;
+}
+
+#ipForm input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #344752;
+    background: #050a0e;
+    color: #cbd9df;
+    font: 1rem ui-monospace, SFMono-Regular, Consolas, monospace;
+    outline: none;
+}
+
+#ipForm input:focus { border-color: #617985; }
+
+#ipForm button { grid-column: 1 / -1; }
+
+.ip-label {
+    margin-top: 4px;
+    color: #607883;
+    font-size: .72rem;
+}
+
+@media (max-width: 650px) {
+    #ipForm { grid-template-columns: 1fr; }
+}
+
 .message {
     min-height: 1.3em;
     text-align: center;
