@@ -21,7 +21,6 @@ var toast_time := 0.0
 var toast_is_error := false
 var last_error := ""
 var error_popup_visible := false
-var packet_direction := 1.0
 var context_device_id := -1
 var context_position := Vector2.ZERO
 var connection_menu := false
@@ -165,14 +164,17 @@ func _draw_world(screen: Vector2) -> void:
 		var pb := b + Vector2(DEVICE_SIZE.x * zoom * 0.5, 58 * zoom)
 		draw_line(pa, pb, Color("#18212c"), 10.0 * zoom, true)
 		draw_line(pa, pb, Color("#5ee6a8"), 3.0 * zoom, true)
-		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 180.0)
-		var cycle := fmod(Time.get_ticks_msec() / 1800.0, 2.0)
-		var packet_t := cycle if cycle <= 1.0 else 2.0 - cycle
-		var packet := pa.lerp(pb, packet_t)
-		draw_circle(packet, 5.0 + pulse * 2.0, Color("#b8ffdc"))
-		var packet_t_reverse := 1.0 - packet_t
-		var reverse_packet := pa.lerp(pb, packet_t_reverse)
-		draw_circle(reverse_packet, 5.0 + pulse * 2.0, Color("#b8ffdc"))
+		# Each direction gets its own independent packet timing.
+		# This makes traffic look asynchronous rather than perfectly mirrored.
+		var time := Time.get_ticks_msec() / 1000.0
+		var forward_phase := fmod(time * 0.72 + 0.17, 1.0)
+		var reverse_phase := fmod(time * 0.91 + 0.61, 1.0)
+		var forward_t := forward_phase
+		var reverse_t := reverse_phase
+		var pulse_forward := 0.5 + 0.5 * sin(time * 5.1 + 0.8)
+		var pulse_reverse := 0.5 + 0.5 * sin(time * 6.4 + 2.1)
+		draw_circle(pa.lerp(pb, forward_t), 5.0 + pulse_forward * 2.0, Color("#b8ffdc"))
+		draw_circle(pa.lerp(pb, reverse_t), 5.0 + pulse_reverse * 2.0, Color("#b8ffdc"))
 
 	for d in devices:
 		_draw_device(d)
