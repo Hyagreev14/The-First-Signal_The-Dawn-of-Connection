@@ -2,7 +2,7 @@
 
 ### Before we were connected.
 
-**The First Signal** is a browser-based network-building game where you start with a single computer and build the connected world from the ground up.
+**The First Signal** is a network-building simulation game where you start with a single computer and build the connected world from the ground up.
 
 Place machines. Build connections. Create networks. Discover new technologies. Expand.
 
@@ -21,11 +21,28 @@ The networking isn't just the setting — **it's the game.**
 
 ## 🚧 Development
 
-**Current version:** `v0.0003`
+**Current version:** `v0.001`
 
-The game is currently in very early development.
+The project has moved from the early browser prototype into a native Godot game.
 
-### v0.0003
+### v0.001 — The Simulation Foundation
+
+- Native Godot 2D game project
+- Desktop-game simulation world
+- Two computer devices represented as world objects
+- Drag devices around the network world
+- Pan the world with the middle mouse button
+- Zoom with the mouse wheel
+- Select devices and inspect their state
+- Individual power states
+- Generated MAC addresses
+- Physical Ethernet link visualization
+- Animated data packet moving across an active link
+- Initial IPv4 fields ready for the networking simulation
+- Dark, cold, technical visual direction
+- Foundation for future routers, switches, Wi-Fi, DHCP, IPv6, DNS, ISPs, ASNs, IXPs, and multiplayer
+
+### v0.0003 — Browser Prototype
 
 - IPv4 addresses for computers
 - Manual IPv4 configuration
@@ -34,7 +51,7 @@ The game is currently in very early development.
 - Same /24 subnet validation
 - Basic IPv4 LAN state
 
-### v0.0002
+### v0.0002 — Browser Prototype
 
 - Two computers
 - Generated MAC address for each computer
@@ -43,7 +60,7 @@ The game is currently in very early development.
 - Ethernet link only works when both computers are powered on
 - Basic network visualization
 
-### v0.0001
+### v0.0001 — Browser Prototype
 
 - One computer
 - Generated MAC address
@@ -54,11 +71,10 @@ More networking mechanics will be introduced gradually as development continues.
 
 ## 🛠️ Built With
 
-- Python
-- Flask
-- HTML
-- CSS
-- JavaScript
+- Godot Engine
+- GDScript
+
+The earlier browser prototype used Python, Flask, HTML, CSS, and JavaScript. It remains part of the project's development history.
 
 ## 📜 License
 
