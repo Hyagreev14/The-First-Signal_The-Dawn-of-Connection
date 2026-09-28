@@ -2,6 +2,7 @@ extends Node2D
 
 const WORLD_SIZE := Vector2(2600, 1800)
 const DEVICE_SIZE := Vector2(170, 110)
+const CREATE_BUTTON := Rect2(24, 78, 190, 42)
 
 var devices := [
 	{
@@ -58,6 +59,9 @@ func _input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			if CREATE_BUTTON.has_point(event.position):
+				_create_computer()
+				return
 			var hit := _device_at(mouse_world)
 			if hit != -1:
 				selected_id = hit
@@ -91,6 +95,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, screen), Color("#080b10"))
 	_draw_world(screen)
 	_draw_header(screen)
+	_draw_build_button()
 	_draw_inspector(screen)
 	_draw_controls(screen)
 	if toast != "":
@@ -165,6 +170,11 @@ func _draw_header(screen: Vector2) -> void:
 	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 190, 31), "SIMULATION  v0.001", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#6e8190"))
 	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 190, 48), "WORLD ONLINE: %d DEVICES" % devices.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#536675"))
 
+func _draw_build_button() -> void:
+	draw_rect(CREATE_BUTTON, Color("#111a22"), true)
+	draw_rect(CREATE_BUTTON, Color("#3b5261"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, CREATE_BUTTON.position + Vector2(14, 27), "+  BUILD COMPUTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#dce8ef"))
+
 func _draw_inspector(screen: Vector2) -> void:
 	var panel := Rect2(screen.x - 300, 82, 270, 430)
 	draw_rect(panel, Color(0.035, 0.05, 0.07, 0.96), true)
@@ -202,6 +212,27 @@ func _draw_toast(screen: Vector2) -> void:
 	draw_rect(box, Color("#111922"), true)
 	draw_rect(box, Color("#344553"), false, 1)
 	draw_string(ThemeDB.fallback_font, box.position + Vector2(14, 24), toast, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#dce8ef"))
+
+func _create_computer() -> void:
+	var next_id := 1
+	for d in devices:
+		next_id = max(next_id, int(d.id) + 1)
+
+	var spawn_index := devices.size() - 1
+	var new_position := Vector2(720 + (spawn_index % 4) * 250, 940 + (spawn_index / 4) * 180)
+	var new_device := {
+		"id": next_id,
+		"name": "COMPUTER %02d" % next_id,
+		"kind": "Computer",
+		"position": new_position,
+		"powered": false,
+		"mac": _make_mac(),
+		"ip": ""
+	}
+	devices.append(new_device)
+	selected_id = next_id
+	_toast("Built " + new_device.name)
+	queue_redraw()
 
 func _toggle_selected_power() -> void:
 	if selected_id == -1:
