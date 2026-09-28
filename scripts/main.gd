@@ -5,31 +5,12 @@ const DEVICE_SIZE := Vector2(170, 110)
 const CREATE_BUTTON := Rect2(24, 78, 190, 42)
 const MENU_SIZE := Vector2(250, 240)
 
-var devices := [
-	{
-		"id": 1,
-		"name": "COMPUTER 01",
-		"kind": "Computer",
-		"position": Vector2(330, 300),
-		"powered": false,
-		"mac": "",
-		"ip": "192.168.0.2"
-	},
-	{
-		"id": 2,
-		"name": "COMPUTER 02",
-		"kind": "Computer",
-		"position": Vector2(650, 300),
-		"powered": false,
-		"mac": "",
-		"ip": "192.168.0.3"
-	}
-]
+var devices: Array = []
 
 var ethernet_connected := false
 var ethernet_source_id := -1
 var ethernet_target_id := -1
-var selected_id := 1
+var selected_id := -1
 var dragging_id := -1
 var drag_offset := Vector2.ZERO
 var camera_offset := Vector2.ZERO
@@ -46,8 +27,6 @@ var ip_buffer := ""
 
 func _ready() -> void:
 	randomize()
-	for device in devices:
-		device.mac = _make_mac()
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -224,8 +203,8 @@ func _draw_inspector(screen: Vector2) -> void:
 	draw_rect(panel, Color("#263541"), false, 1)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 28), "DEVICE INSPECTOR", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#728696"))
 	if selected_id == -1:
-		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 75), "Select a device", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#c7d4dc"))
-		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 101), "Right-click a device for actions.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#647785"))
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 75), "No device selected", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#c7d4dc"))
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 101), "Build a computer to begin.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#647785"))
 		return
 	var d := _get_device(selected_id)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 72), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#eef6fa"))
@@ -233,7 +212,7 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "POWER", "ON" if d.powered else "OFF", 130)
 	_field(panel, "MAC", d.mac, 174)
 	_field(panel, "IPv4", d.ip if d.ip != "" else "—", 218)
-	_field(panel, "LINK", "ETHERNET" if ethernet_connected else "DISCONNECTED", 262)
+	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 360), "Right-click for device actions", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
 
@@ -312,6 +291,22 @@ func _perform_context_action(action: String) -> void:
 		_open_connection_menu(context_device_id)
 		return
 
+	if action.begins_with("target:"):
+		var target_id := int(action.trim_prefix("target:"))
+		_connect_ethernet(connection_source_id, target_id)
+		context_device_id = -1
+		connection_menu = false
+		connection_source_id = -1
+		queue_redraw()
+		return
+
+	if action == "cancel_connect":
+		context_device_id = -1
+		connection_menu = false
+		connection_source_id = -1
+		queue_redraw()
+		return
+
 	var id := context_device_id
 	context_device_id = -1
 	selected_id = id
@@ -322,18 +317,7 @@ func _perform_context_action(action: String) -> void:
 		_disconnect_ethernet()
 	elif action == "ip":
 		_begin_ip_edit(id)
-	elif action == "cancel_connect":
-		connection_menu = false
-		connection_source_id = -1
 	queue_redraw()
-
-	if action.begins_with("target:"):
-		var target_id := int(action.trim_prefix("target:"))
-		_connect_ethernet(connection_source_id, target_id)
-		context_device_id = -1
-		connection_menu = false
-		connection_source_id = -1
-		queue_redraw()
 
 func _open_connection_menu(source_id: int) -> void:
 	connection_source_id = source_id
@@ -352,6 +336,9 @@ func _connect_ethernet(source_id: int, target_id: int) -> void:
 		return
 	if not _get_device(target_id).powered:
 		_toast("Power on " + _get_device(target_id).name + " first.")
+		return
+	if ethernet_connected:
+		_toast("This Ethernet cable is already connected. Disconnect it first.")
 		return
 	ethernet_source_id = source_id
 	ethernet_target_id = target_id
@@ -413,8 +400,8 @@ func _create_computer() -> void:
 	for d in devices:
 		next_id = max(next_id, int(d.id) + 1)
 
-	var spawn_index := devices.size() - 1
-	var new_position := Vector2(350 + (spawn_index % 4) * 250, 520 + (spawn_index / 4) * 180)
+	var spawn_index := devices.size()
+	var new_position := Vector2(350 + (spawn_index % 4) * 250, 260 + (spawn_index / 4) * 180)
 	var new_device := {
 		"id": next_id,
 		"name": "COMPUTER %02d" % next_id,
@@ -436,15 +423,18 @@ func _toggle_selected_power() -> void:
 	d.powered = not d.powered
 	if not d.powered and (d.id == ethernet_source_id or d.id == ethernet_target_id):
 		_disconnect_ethernet()
-	_toast("Powered OFF " + d.name + " — Ethernet disconnected.")
+		_toast("Powered OFF " + d.name + " — Ethernet disconnected.")
 	else:
 		_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
+
+func _device_has_link(id: int) -> bool:
+	return ethernet_connected and (id == ethernet_source_id or id == ethernet_target_id)
 
 func _get_device(id: int) -> Dictionary:
 	for d in devices:
 		if d.id == id:
 			return d
-	return devices[0]
+	return {}
 
 func _device_at(p: Vector2) -> int:
 	for d in devices:
