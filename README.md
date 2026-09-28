@@ -21,7 +21,7 @@ The networking isn't just the setting — **it's the game.**
 
 ## 🚧 Development
 
-**Current version:** `v0.001`
+**Current version:** `v0.002`
 
 The project has moved from the early browser prototype into a native Godot game.
 
@@ -89,14 +89,14 @@ The project has moved from the early browser prototype into a native Godot game.
 - Insufficient-funds validation
 - On-screen action controls for the selected computer
 - Keyboard shortcuts:
-  - **Ctrl+P** — Power
-  - **Ctrl+C** — Connect Ethernet
-  - **Ctrl+R** — Rename
-  - **Ctrl+I** — Configure IPv4
-  - **Ctrl+E** — Inspect
-  - **Ctrl+F** — Center view
-  - **Ctrl++** — Zoom in
-  - **Ctrl+-** — Zoom out
+  - **F1** — Power
+  - **F2** — Connect Ethernet
+  - **F3** — Rename
+  - **F4** — Configure IPv4
+  - **F9** — Inspect
+  - **F6** — Center view
+  - **F7** — Zoom in
+  - **F8** — Zoom out
   - **Delete** — Delete selected computer
   - **Esc** — Pause / resume the simulation
 - Development-only redeem code system for unlimited-funds testing
