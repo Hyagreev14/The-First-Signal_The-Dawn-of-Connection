@@ -7,91 +7,110 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <main class="terminal">
-        <header>
-            <div>
+    <main class="game-shell">
+        <header class="game-header">
+            <div class="brand">
                 <span class="eyebrow">THE FIRST SIGNAL</span>
                 <h1>The Dawn of Connection</h1>
             </div>
-            <span class="version">v0.0003</span>
+            <div class="build-info">
+                <span>SIMULATION</span>
+                <strong>v0.0003</strong>
+            </div>
         </header>
 
-        <section class="network-field" id="networkField">
-            <div class="cable" id="cable"></div>
-
-            {% for computer in game.computers %}
-            <div class="computer" id="computer-{{ computer.id }}">
-                <div class="led"></div>
-                <div class="computer-icon">▣</div>
-                <strong>COMPUTER {{ computer.id }}</strong>
-                <span class="status">OFFLINE</span>
-                <code class="ip-label">{{ computer.ip or "NO IP" }}</code>
+        <section class="simulator" id="simulator">
+            <div class="world-toolbar">
+                <div class="world-title">
+                    <span class="dot"></span>
+                    <span>NETWORK WORLD</span>
+                </div>
+                <div class="world-tools">
+                    <button id="zoomOut" type="button" aria-label="Zoom out">−</button>
+                    <span id="zoomValue">100%</span>
+                    <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+                    <button id="resetView" type="button">CENTER</button>
+                </div>
             </div>
-            {% endfor %}
-        </section>
 
-        <section class="system-panel">
-            <div class="panel-title">NETWORK</div>
-
-            {% for computer in game.computers %}
-            <div class="row">
-                <span>COMPUTER {{ computer.id }} · MAC</span>
-                <code>{{ computer.mac }}</code>
-            </div>
-            {% if game.computers|length > 1 %}
-            <div class="row">
-                <span>COMPUTER {{ computer.id }} · IPV4</span>
-                <code class="ip-value">{{ computer.ip or "UNCONFIGURED" }}</code>
-            </div>
-            {% endif %}
-            {% endfor %}
-
-            <div class="row">
-                <span>ETHERNET LINK</span>
-                <strong id="linkStatus">DISCONNECTED</strong>
-            </div>
-        </section>
-
-        <div class="controls">
-            {% for computer in game.computers %}
-            <button class="power-button" data-id="{{ computer.id }}" type="button">
-                POWER ON · COMPUTER {{ computer.id }}
-            </button>
-            {% endfor %}
-
-            {% if game.computers|length < 2 %}
-            <button id="buildButton" type="button">BUILD SECOND COMPUTER</button>
-            {% else %}
-            <button id="connectButton" type="button">CONNECT ETHERNET</button>
-            {% endif %}
-        </div>
-
-        {% if game.computers|length > 1 %}
-        <section class="ip-panel">
-            <div class="panel-title">IP CONFIGURATION</div>
-            <form id="ipForm">
-                {% for computer in game.computers %}
-                <label>
-                    COMPUTER {{ computer.id }}
-                    <input
-                        name="ip_{{ computer.id }}"
-                        value="{{ computer.ip or ('192.168.0.' ~ (computer.id + 1)) }}"
-                        inputmode="decimal"
-                        autocomplete="off"
-                        maxlength="15"
+            <div class="world" id="world" tabindex="0" aria-label="Network simulation world">
+                <div class="grid" id="grid"></div>
+                <div class="links-layer" id="linksLayer"></div>
+                <div class="devices-layer" id="devicesLayer">
+                    {% for computer in game.computers %}
+                    <article
+                        class="device computer-device"
+                        id="computer-{{ computer.id }}"
+                        data-id="{{ computer.id }}"
+                        data-x="{{ 30 if computer.id == 1 else 70 }}"
+                        data-y="50"
+                        tabindex="0"
+                        aria-label="Computer {{ computer.id }}"
                     >
-                </label>
-                {% endfor %}
-                <button type="submit">APPLY IPV4</button>
-            </form>
-            <p class="message" id="message">Assign both computers an IPv4 address.</p>
-        </section>
-        {% else %}
-        <p class="message" id="message">A second machine is waiting to exist.</p>
-        {% endif %}
+                        <div class="device-screen">
+                            <span class="screen-line"></span>
+                            <span class="screen-line short"></span>
+                            <span class="screen-cursor"></span>
+                        </div>
+                        <div class="device-base"></div>
+                        <div class="device-led"></div>
+                        <div class="device-label">PC-{{ computer.id }}</div>
+                    </article>
+                    {% endfor %}
+                </div>
 
+                <div class="world-hint" id="worldHint">
+                    <strong>BUILD YOUR FIRST NETWORK</strong>
+                    <span>Drag devices to place them. Click a device to inspect it.</span>
+                </div>
+            </div>
+
+            <aside class="inspector" id="inspector">
+                <div class="inspector-head">
+                    <div>
+                        <span class="eyebrow">DEVICE INSPECTOR</span>
+                        <h2 id="inspectorTitle">Nothing selected</h2>
+                    </div>
+                    <button id="closeInspector" class="icon-button" type="button" aria-label="Close inspector">×</button>
+                </div>
+                <div id="inspectorContent" class="inspector-content">
+                    <p>Select a machine in the world.</p>
+                </div>
+            </aside>
+        </section>
+
+        <section class="command-bar">
+            <div class="command-group">
+                {% for computer in game.computers %}
+                <button class="command-button power-button" data-id="{{ computer.id }}" type="button">
+                    <span class="command-icon">⏻</span>
+                    <span>POWER PC-{{ computer.id }}</span>
+                </button>
+                {% endfor %}
+                {% if game.computers|length < 2 %}
+                <button id="buildButton" class="command-button primary" type="button">
+                    <span class="command-icon">+</span>
+                    <span>BUILD COMPUTER</span>
+                </button>
+                {% else %}
+                <button id="connectButton" class="command-button primary" type="button">
+                    <span class="command-icon">↔</span>
+                    <span>CONNECT ETHERNET</span>
+                </button>
+                {% endif %}
+            </div>
+            <div class="sim-status">
+                <span>LINK</span>
+                <strong id="linkStatus">DISCONNECTED</strong>
+                <span class="separator">·</span>
+                <span id="message">A second machine is waiting to exist.</span>
+            </div>
+        </section>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
         <footer>THE NETWORK BEGINS WITH YOU.</footer>
     </main>
+
     <script>window.__GAME_STATE__ = {{ game|tojson }};</script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
 </body>
