@@ -93,7 +93,7 @@ The project has moved from the early browser prototype into a native Godot game.
   - **F2** — Connect Ethernet
   - **F3** — Rename
   - **F4** — Configure IPv4
-  - **F9** — Inspect
+  - **F7** — Inspect
   - **Home** — Center view
   - **Page Up** — Zoom in
   - **Page Down** — Zoom out
