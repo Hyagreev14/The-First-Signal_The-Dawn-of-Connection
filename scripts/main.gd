@@ -156,36 +156,49 @@ func _input(event: InputEvent) -> void:
 		_zoom_at(event.position, 0.9)
 
 	if event is InputEventKey and event.pressed and not event.echo and event.ctrl_pressed:
-		if event.keycode == KEY_P:
+		# Use both logical and physical key codes so Ctrl shortcuts work
+		# consistently across keyboard layouts and Godot window focus states.
+		var shortcut_key := event.keycode
+		if shortcut_key == KEY_NONE:
+			shortcut_key = event.physical_keycode
+		if shortcut_key == KEY_P:
 			_toggle_selected_power()
-		elif event.keycode == KEY_C:
+			return
+		elif shortcut_key == KEY_C:
 			if selected_id == -1:
 				_error("Cannot connect: no computer is selected.")
 			else:
 				_open_connection_menu(selected_id)
-		elif event.keycode == KEY_R:
+			return
+		elif shortcut_key == KEY_R:
 			if selected_id == -1:
 				_error("Cannot rename: no computer is selected.")
 			else:
 				_begin_name_edit(selected_id)
-		elif event.keycode == KEY_I:
+			return
+		elif shortcut_key == KEY_I:
 			if selected_id == -1:
 				_error("Cannot configure IPv4: no computer is selected.")
 			else:
 				_begin_ip_edit(selected_id)
-		elif event.keycode == KEY_E:
+			return
+		elif shortcut_key == KEY_E:
 			if selected_id == -1:
 				_error("Cannot inspect: no computer is selected.")
 			else:
 				_toast("Inspecting " + _get_device(selected_id).name + ".")
-		elif event.keycode == KEY_F:
+			return
+		elif shortcut_key == KEY_F:
 			camera_offset = Vector2.ZERO
 			zoom = 0.9
 			queue_redraw()
-		elif event.keycode == KEY_EQUAL or event.keycode == KEY_KP_ADD:
+			return
+		elif shortcut_key == KEY_EQUAL or shortcut_key == KEY_KP_ADD:
 			_zoom_at(get_viewport_rect().size * 0.5, 1.1)
-		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
+			return
+		elif shortcut_key == KEY_MINUS or shortcut_key == KEY_KP_SUBTRACT:
 			_zoom_at(get_viewport_rect().size * 0.5, 0.9)
+			return
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_DELETE:
 		_delete_selected()
