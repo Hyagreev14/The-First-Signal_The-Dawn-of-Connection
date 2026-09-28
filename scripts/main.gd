@@ -156,37 +156,40 @@ func _input(event: InputEvent) -> void:
 		_zoom_at(event.position, 0.9)
 
 	if event is InputEventKey and event.pressed and not event.echo and event.ctrl_pressed and event.alt_pressed:
+		# Some keyboard layouts report Ctrl+Alt combinations through Unicode
+		# instead of a normal keycode, so accept both representations.
 		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
-		if shortcut_key == KEY_P:
+		var shortcut_char := event.unicode
+		if shortcut_key == KEY_P or shortcut_char == 112 or shortcut_char == 80:
 			_toggle_selected_power()
 			return
-		elif shortcut_key == KEY_C:
+		elif shortcut_key == KEY_C or shortcut_char == 99 or shortcut_char == 67:
 			if selected_id == -1:
 				_error("Cannot connect: no computer is selected.")
 			else:
 				_open_connection_menu(selected_id)
 			return
-		elif shortcut_key == KEY_R:
+		elif shortcut_key == KEY_R or shortcut_char == 114 or shortcut_char == 82:
 			if selected_id == -1:
 				_error("Cannot rename: no computer is selected.")
 			else:
 				_begin_name_edit(selected_id)
 			return
-		elif shortcut_key == KEY_I:
+		elif shortcut_key == KEY_I or shortcut_char == 105 or shortcut_char == 73:
 			if selected_id == -1:
 				_error("Cannot configure IPv4: no computer is selected.")
 			else:
 				_begin_ip_edit(selected_id)
 			return
-		elif shortcut_key == KEY_E:
+		elif shortcut_key == KEY_E or shortcut_char == 101 or shortcut_char == 69:
 			if selected_id == -1:
 				_error("Cannot inspect: no computer is selected.")
 			else:
 				_toast("Inspecting " + _get_device(selected_id).name + ".")
 			return
-		elif shortcut_key == KEY_F:
+		elif shortcut_key == KEY_F or shortcut_char == 102 or shortcut_char == 70:
 			camera_offset = Vector2.ZERO
 			zoom = 0.9
 			queue_redraw()
