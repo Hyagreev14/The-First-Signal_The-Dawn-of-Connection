@@ -38,6 +38,7 @@ var editing_ip := false
 var ip_buffer := ""
 var editing_name := false
 var name_buffer := ""
+var inspecting_id := -1
 
 func _ready() -> void:
 	randomize()
@@ -96,6 +97,11 @@ func _input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			if inspecting_id != -1:
+				if _inspect_close_rect().has_point(event.position):
+					inspecting_id = -1
+					queue_redraw()
+				return
 			if error_popup_visible:
 				error_popup_visible = false
 				queue_redraw()
@@ -221,6 +227,8 @@ func _draw() -> void:
 		_draw_redeem_editor(screen)
 	if paused:
 		_draw_pause_overlay(screen)
+	if inspecting_id != -1:
+		_draw_inspect_panel(screen)
 	if error_popup_visible:
 		_draw_error_popup(screen)
 
@@ -475,7 +483,7 @@ func _perform_context_action(action: String) -> void:
 	elif action == "ip":
 		_begin_ip_edit(id)
 	elif action == "inspect":
-		_toast("Inspecting " + _get_device(id).name + ".")
+		inspecting_id = id
 	queue_redraw()
 
 func _open_connection_menu(source_id: int) -> void:
@@ -689,6 +697,43 @@ func _set_selected_ip() -> void:
 		_toast("IPv4 configured: " + ip_buffer)
 	queue_redraw()
 
+
+func _inspect_close_rect() -> Rect2:
+	var screen := get_viewport_rect().size
+	var panel := Rect2(Vector2(screen.x * 0.5 - 310, screen.y * 0.5 - 230), Vector2(620, 460))
+	return Rect2(panel.position + Vector2(panel.size.x - 120, panel.size.y - 52), Vector2(96, 34))
+
+func _draw_inspect_panel(screen: Vector2) -> void:
+	var d := _get_device(inspecting_id)
+	if d.is_empty():
+		inspecting_id = -1
+		return
+	var panel := Rect2(Vector2(screen.x * 0.5 - 310, screen.y * 0.5 - 230), Vector2(620, 460))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.55), true)
+	draw_rect(panel.grow(5), Color(0.37, 0.90, 0.66, 0.08), true)
+	draw_rect(panel, Color("#0d141c"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_rect(Rect2(panel.position, Vector2(panel.size.x, 58)), Color("#101b23"), true)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 35), "COMPUTER INSPECTION", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 48), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color("#718594"))
+_field(panel, "DEVICE TYPE", d.kind, 92)
+_field(panel, "POWER", "ON" if d.powered else "OFF", 136)
+_field(panel, "MAC ADDRESS", d.mac, 180)
+_field(panel, "IPv4 ADDRESS", d.ip if d.ip != "" else "—", 224)
+_field(panel, "ETHERNET LINKS", str(_device_link_count(d.id)), 268)
+_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 312)
+var close_button := _inspect_close_rect()
+draw_rect(close_button, Color("#18232c"), true)
+draw_rect(close_button, Color("#52616d"), false, 1.0)
+draw_string(ThemeDB.fallback_font, close_button.position + Vector2(22, 22), "CLOSE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#dce6eb"))
+draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, panel.size.y - 24), "Right-click a device to inspect it.", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+
+func _device_link_count(id: int) -> int:
+	var count := 0
+	for link in ethernet_links:
+		if link.source_id == id or link.target_id == id:
+			count += 1
+	return count
 
 func _draw_ip_editor(screen: Vector2) -> void:
 	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
