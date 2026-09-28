@@ -48,8 +48,7 @@ func _input(event: InputEvent) -> void:
 	if error_popup_visible:
 		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			error_popup_visible = false
-			editing_ip = false
-			editing_name = false
+			# Keep the active editor open so the player can correct the value.
 			queue_redraw()
 		return
 
@@ -492,11 +491,9 @@ func _set_selected_ip() -> void:
 		_error("Cannot configure IPv4: computer is powered OFF.")
 		return
 	if not _valid_ipv4(ip_buffer):
-		editing_ip = false
 		_error("Cannot configure IPv4: invalid address.")
 		return
 	if not _valid_ipv4_host_24(ip_buffer):
-		editing_ip = false
 		_error("Cannot configure IPv4: address cannot be a network or broadcast address.")
 		return
 	var other_id := ethernet_target_id if ethernet_source_id == selected_id else ethernet_source_id
@@ -508,7 +505,6 @@ func _set_selected_ip() -> void:
 			return
 	for d in devices:
 		if d.id != selected_id and d.ip == ip_buffer:
-			editing_ip = false
 			_error(ip_buffer + " is already in use.")
 			return
 	selected_device.ip = ip_buffer
