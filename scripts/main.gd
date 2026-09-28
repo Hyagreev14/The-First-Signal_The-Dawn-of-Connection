@@ -155,49 +155,48 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 		_zoom_at(event.position, 0.9)
 
-	if event is InputEventKey and event.pressed and not event.echo and event.ctrl_pressed and event.alt_pressed:
-		# Some keyboard layouts report Ctrl+Alt combinations through Unicode
-		# instead of a normal keycode, so accept both representations.
+	# Reliable single-key shortcuts. Ctrl/Alt combinations are handled poorly
+	# by some Windows keyboard layouts, so the game uses F-keys instead.
+	if event is InputEventKey and event.pressed and not event.echo:
 		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
-		var shortcut_char: int = event.unicode
-		if shortcut_key == KEY_P or shortcut_char == 112 or shortcut_char == 80:
+		if shortcut_key == KEY_F1:
 			_toggle_selected_power()
 			return
-		elif shortcut_key == KEY_C or shortcut_char == 99 or shortcut_char == 67:
+		elif shortcut_key == KEY_F2:
 			if selected_id == -1:
 				_error("Cannot connect: no computer is selected.")
 			else:
 				_open_connection_menu(selected_id)
 			return
-		elif shortcut_key == KEY_R or shortcut_char == 114 or shortcut_char == 82:
+		elif shortcut_key == KEY_F3:
 			if selected_id == -1:
 				_error("Cannot rename: no computer is selected.")
 			else:
 				_begin_name_edit(selected_id)
 			return
-		elif shortcut_key == KEY_I or shortcut_char == 105 or shortcut_char == 73:
+		elif shortcut_key == KEY_F4:
 			if selected_id == -1:
 				_error("Cannot configure IPv4: no computer is selected.")
 			else:
 				_begin_ip_edit(selected_id)
 			return
-		elif shortcut_key == KEY_E or shortcut_char == 101 or shortcut_char == 69:
+		elif shortcut_key == KEY_F5:
 			if selected_id == -1:
 				_error("Cannot inspect: no computer is selected.")
 			else:
 				_toast("Inspecting " + _get_device(selected_id).name + ".")
 			return
-		elif shortcut_key == KEY_F or shortcut_char == 102 or shortcut_char == 70:
+		elif shortcut_key == KEY_F6:
 			camera_offset = Vector2.ZERO
 			zoom = 0.9
 			queue_redraw()
 			return
-		elif shortcut_key == KEY_EQUAL or shortcut_key == KEY_KP_ADD:
+		elif shortcut_key == KEY_F7:
 			_zoom_at(get_viewport_rect().size * 0.5, 1.1)
 			return
-		elif shortcut_key == KEY_MINUS or shortcut_key == KEY_KP_SUBTRACT:
+		elif shortcut_key == KEY_F8:
 			_zoom_at(get_viewport_rect().size * 0.5, 0.9)
 			return
 
@@ -342,13 +341,13 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "IPv4", d.ip if d.ip != "" else "—", 218)
 	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
-	_draw_inspector_button(panel, Rect2(18, 350, 112, 32), "POWER  [Ctrl+Alt+P]")
-	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [Ctrl+Alt+C]")
-	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [Ctrl+Alt+R]")
-	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [Ctrl+Alt+I]")
-	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [Ctrl+Alt+E]")
+	_draw_inspector_button(panel, Rect2(18, 350, 112, 32), "POWER  [F1]")
+	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [F2]")
+	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [F3]")
+	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [F4]")
+	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [F5]")
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 486), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "Ctrl+Alt+F center   Ctrl+Alt++ / Ctrl+Alt+- zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "F6 center   F7 / F8 zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
 
 func _draw_inspector_button(panel: Rect2, local_rect: Rect2, label: String) -> void:
 	var r := Rect2(panel.position + local_rect.position, local_rect.size)
