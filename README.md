@@ -78,6 +78,31 @@ The project has moved from the early browser prototype into a native Godot game.
 - Configure IPv4 addresses
 - IPv4 validation and duplicate-address checks
 
+### v0.002 — Economy, Controls & Testing
+
+- Player starts with **$1000**
+- Building a computer costs **$100**
+- Connecting an Ethernet cable costs **$25**
+- First successful Ethernet connection rewards **$150**
+- First successful IPv4 configuration rewards **$50**
+- Currency HUD
+- Insufficient-funds validation
+- On-screen action controls for the selected computer
+- Keyboard shortcuts:
+  - **Ctrl+P** — Power
+  - **Ctrl+C** — Connect Ethernet
+  - **Ctrl+R** — Rename
+  - **Ctrl+I** — Configure IPv4
+  - **Ctrl+E** — Inspect
+  - **Ctrl+F** — Center view
+  - **Ctrl++** — Zoom in
+  - **Ctrl+-** — Zoom out
+  - **Delete** — Delete selected computer
+  - **Esc** — Pause / resume the simulation
+- Development-only redeem code system for unlimited-funds testing
+- Test mode displays unlimited funds and bypasses economy costs
+- Existing right-click controls remain available as a secondary interaction method
+
 More networking mechanics will be introduced gradually as development continues.
 
 ## 🛠️ Built With
