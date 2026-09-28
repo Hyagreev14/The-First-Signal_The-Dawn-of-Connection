@@ -168,7 +168,7 @@ func _input(event: InputEvent) -> void:
 			if selected_id == -1:
 				_error("Cannot connect: no computer is selected.")
 			else:
-				_open_connection_menu(selected_id)
+				_perform_inspector_action("connect")
 			return
 		elif shortcut_key == KEY_F3:
 			if selected_id == -1:
@@ -186,7 +186,7 @@ func _input(event: InputEvent) -> void:
 			if selected_id == -1:
 				_error("Cannot inspect: no computer is selected.")
 			else:
-				_toast("Inspecting " + _get_device(selected_id).name + ".")
+				_perform_inspector_action("inspect")
 			return
 		elif shortcut_key == KEY_F6:
 			camera_offset = Vector2.ZERO
@@ -487,6 +487,7 @@ func _perform_context_action(action: String) -> void:
 
 func _open_connection_menu(source_id: int) -> void:
 	connection_source_id = source_id
+	context_position = Vector2(get_viewport_rect().size.x - 300, 500)
 	connection_menu = true
 	context_position.x = min(context_position.x, get_viewport_rect().size.x - MENU_SIZE.x - 10)
 	context_position.y = min(context_position.y, get_viewport_rect().size.y - MENU_SIZE.y - 64)
