@@ -67,6 +67,7 @@ The project has moved from the early browser prototype into a native Godot game.
 - Generated MAC addresses
 - Physical Ethernet link visualization
 - Animated data packet moving across an active link
+- Independent asynchronous packet motion in each direction, so bidirectional traffic is not perfectly coordinated
 - Initial IPv4 fields ready for the networking simulation
 - Dark, cold, technical visual direction
 - Foundation for future routers, switches, Wi-Fi, DHCP, IPv6, DNS, ISPs, ASNs, IXPs, and multiplayer
