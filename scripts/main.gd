@@ -158,6 +158,10 @@ func _input(event: InputEvent) -> void:
 	# Reliable single-key shortcuts. Ctrl/Alt combinations are handled poorly
 	# by some Windows keyboard layouts, so the game uses F-keys instead.
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Temporary keyboard diagnostic: shows exactly what Godot receives.
+		if event.keycode == KEY_F2 or event.keycode == KEY_F5 or event.physical_keycode == KEY_F2 or event.physical_keycode == KEY_F5:
+			_toast("KEY DEBUG — keycode=%s physical=%s unicode=%s ctrl=%s alt=%s shift=%s" % [event.keycode, event.physical_keycode, event.unicode, event.ctrl_pressed, event.alt_pressed, event.shift_pressed])
+			return
 		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
