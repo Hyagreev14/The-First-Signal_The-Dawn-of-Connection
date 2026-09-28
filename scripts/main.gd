@@ -3,9 +3,19 @@ extends Node2D
 const WORLD_SIZE := Vector2(2600, 1800)
 const DEVICE_SIZE := Vector2(170, 110)
 const CREATE_BUTTON := Rect2(24, 78, 190, 42)
+const CURRENCY_START := 1000
+const COMPUTER_COST := 100
+const ETHERNET_COST := 25
 const MENU_SIZE := Vector2(250, 240)
 
 var devices: Array = []
+var money := CURRENCY_START
+var test_mode := false
+var paused := false
+var redeeming := false
+var redeem_buffer := ""
+var first_link_reward_claimed := false
+var first_ipv4_reward_claimed := false
 
 var ethernet_connected := false
 var ethernet_source_id := -1
@@ -35,6 +45,9 @@ func _ready() -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
+	if paused:
+		queue_redraw()
+		return
 	if toast_time > 0.0:
 		toast_time -= delta
 		if toast_time <= 0.0:
@@ -43,6 +56,15 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE and not error_popup_visible and not editing_ip and not editing_name and not redeeming:
+		paused = not paused
+		context_device_id = -1
+		connection_menu = false
+		connection_source_id = -1
+		_toast("GAME PAUSED" if paused else "GAME RESUMED")
+		queue_redraw()
+		return
+
 	# Error popups must take priority over text editors so their CLOSE button
 	# remains clickable even when the error was triggered while editing IPv4.
 	if error_popup_visible:
@@ -50,6 +72,13 @@ func _input(event: InputEvent) -> void:
 			error_popup_visible = false
 			# Keep the active editor open so the player can correct the value.
 			queue_redraw()
+		return
+
+	if paused:
+		return
+
+	if redeeming:
+		_handle_redeem_input(event)
 		return
 
 	if editing_ip:
@@ -150,6 +179,10 @@ func _input(event: InputEvent) -> void:
 		elif event.keycode == KEY_MINUS or event.keycode == KEY_KP_SUBTRACT:
 			_zoom_at(get_viewport_rect().size * 0.5, 0.9)
 
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_DELETE:
+		_delete_selected()
+		return
+
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
 		camera_offset += event.relative
 		queue_redraw()
@@ -158,6 +191,7 @@ func _draw() -> void:
 	var screen := get_viewport_rect().size
 	draw_rect(Rect2(Vector2.ZERO, screen), Color("#080b10"))
 	_draw_world(screen)
+	_draw_currency(screen)
 	_draw_header(screen)
 	_draw_build_button()
 	_draw_inspector(screen)
@@ -170,6 +204,10 @@ func _draw() -> void:
 		_draw_ip_editor(screen)
 	if editing_name:
 		_draw_name_editor(screen)
+	if redeeming:
+		_draw_redeem_editor(screen)
+	if paused:
+		_draw_pause_overlay(screen)
 	if error_popup_visible:
 		_draw_error_popup(screen)
 
@@ -215,6 +253,12 @@ func _draw_world(screen: Vector2) -> void:
 
 	for d in devices:
 		_draw_device(d)
+
+func _draw_currency(screen: Vector2) -> void:
+	var box := Rect2(screen.x - 300, 14, 120, 34)
+	draw_rect(box, Color("#111a22"), true)
+	draw_rect(box, Color("#3b5261"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, box.position + Vector2(12, 22), "$ " + ("∞" if test_mode else str(money)), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#72efb1"))
 
 func _draw_device(d: Dictionary) -> void:
 	var pos := _world_to_screen(d.position)
@@ -406,10 +450,21 @@ func _connect_ethernet(source_id: int, target_id: int) -> void:
 	if ethernet_connected:
 		_error("Cannot connect: the Ethernet cable is already in use. Disconnect it first.")
 		return
+	if not test_mode and money < ETHERNET_COST:
+		_error("Cannot connect: insufficient funds. Ethernet cable cost: $%d." % ETHERNET_COST)
+		return
 	ethernet_source_id = source_id
 	ethernet_target_id = target_id
 	ethernet_connected = true
-	_toast("Ethernet connected: %s ↔ %s" % [_get_device(source_id).name, _get_device(target_id).name])
+	if not test_mode:
+		money -= ETHERNET_COST
+	if not first_link_reward_claimed:
+		first_link_reward_claimed = true
+		if not test_mode:
+			money += 150
+		_toast("Ethernet connected. First LAN job complete: +$150.")
+	else:
+		_toast("Ethernet connected: %s ↔ %s" % [_get_device(source_id).name, _get_device(target_id).name])
 
 func _disconnect_ethernet() -> void:
 	ethernet_connected = false
@@ -524,7 +579,6 @@ func _set_selected_ip() -> void:
 	if _device_has_link(selected_id) and other_id != -1:
 		var other_device := _get_device(other_id)
 		if not other_device.is_empty() and other_device.ip != "" and not _same_subnet_24(ip_buffer, other_device.ip):
-			editing_ip = false
 			_error("Cannot configure IPv4: connected computers must be on the same /24 subnet.")
 			return
 	for d in devices:
@@ -533,7 +587,13 @@ func _set_selected_ip() -> void:
 			return
 	selected_device.ip = ip_buffer
 	editing_ip = false
-	_toast("IPv4 configured: " + ip_buffer)
+	if not first_ipv4_reward_claimed:
+		first_ipv4_reward_claimed = true
+		if not test_mode:
+			money += 50
+		_toast("IPv4 configured: " + ip_buffer + " — Network setup job: +$50.")
+	else:
+		_toast("IPv4 configured: " + ip_buffer)
 	queue_redraw()
 
 
@@ -592,6 +652,9 @@ func _draw_error_popup(screen: Vector2) -> void:
 	draw_string(ThemeDB.fallback_font, close_button.position + Vector2(23, 22), "CLOSE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#dce6eb"))
 
 func _create_computer() -> void:
+	if not test_mode and money < COMPUTER_COST:
+		_error("Cannot build computer: insufficient funds. Computer cost: $%d." % COMPUTER_COST)
+		return
 	var next_id := 1
 	for d in devices:
 		next_id = max(next_id, int(d.id) + 1)
@@ -608,6 +671,8 @@ func _create_computer() -> void:
 		"ip": ""
 	}
 	devices.append(new_device)
+	if not test_mode:
+		money -= COMPUTER_COST
 	selected_id = next_id
 	_toast("Built " + new_device.name)
 	queue_redraw()
@@ -623,6 +688,18 @@ func _toggle_selected_power() -> void:
 		_toast("Powered OFF " + d.name + " — Ethernet disconnected.")
 	else:
 		_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
+
+func _delete_selected() -> void:
+	if selected_id == -1:
+		_error("Cannot delete: no computer is selected.")
+		return
+	var d := _get_device(selected_id)
+	if _device_has_link(selected_id):
+		_disconnect_ethernet()
+	devices.erase(d)
+	_toast("Deleted " + d.name + ".")
+	selected_id = -1
+	queue_redraw()
 
 func _device_has_link(id: int) -> bool:
 	return ethernet_connected and (id == ethernet_source_id or id == ethernet_target_id)
