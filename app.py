@@ -68,6 +68,12 @@ def configure_ip():
     if len(game_state["computers"]) < 2:
         return jsonify({"error": "Build the second computer first"}), 400
 
+    if not all(computer["powered"] for computer in game_state["computers"]):
+        return jsonify({"error": "Both computers must be powered on"}), 400
+
+    if not game_state["ethernet_connected"]:
+        return jsonify({"error": "Connect the Ethernet link first"}), 400
+
     values = []
     for computer in game_state["computers"]:
         raw_ip = request.form.get(f"ip_{computer['id']}", "").strip()
