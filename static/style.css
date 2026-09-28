@@ -25,8 +25,8 @@ body::before {
 }
 
 .terminal {
-    width: min(900px, 92vw);
-    margin: 7vh auto;
+    width: min(1000px, 92vw);
+    margin: 5vh auto;
     padding: 28px;
     border: 1px solid #263640;
     background: rgba(4, 9, 12, .9);
@@ -55,27 +55,21 @@ h1 {
 
 .network-field {
     min-height: 330px;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 20px;
     position: relative;
-}
-
-.network-field::before {
-    content: "";
-    position: absolute;
-    width: 320px;
-    height: 1px;
-    background: #1d3947;
-    box-shadow: 0 0 25px #17313d;
 }
 
 .computer {
     position: relative;
-    z-index: 1;
+    z-index: 2;
+    width: 210px;
     display: grid;
     gap: 7px;
     place-items: center;
-    padding: 35px 55px;
+    padding: 35px 20px;
     border: 1px solid #344752;
     background: #080f14;
     box-shadow: 0 0 35px rgba(0,0,0,.5);
@@ -86,7 +80,11 @@ h1 {
     color: #718792;
 }
 
-.computer span { color: #687b85; font-size: .75rem; letter-spacing: .15em; }
+.computer span {
+    color: #687b85;
+    font-size: .75rem;
+    letter-spacing: .15em;
+}
 
 .led {
     position: absolute;
@@ -105,6 +103,21 @@ h1 {
 
 .computer.online .computer-icon { color: #b8e6d0; }
 
+.cable {
+    position: absolute;
+    z-index: 1;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: #17252d;
+    box-shadow: 0 0 10px rgba(70,110,125,.15);
+}
+
+.cable.connected {
+    background: #9bcbb5;
+    box-shadow: 0 0 18px rgba(141,205,177,.65);
+}
+
 .system-panel {
     border-top: 1px solid #1d2a32;
     border-bottom: 1px solid #1d2a32;
@@ -116,25 +129,50 @@ h1 {
 .row {
     display: flex;
     justify-content: space-between;
+    gap: 20px;
     padding: 7px 0;
     color: #667984;
 }
 
-.row code, .row strong { color: #b8c8d0; font-weight: 500; }
+.row code, .row strong {
+    color: #b8c8d0;
+    font-weight: 500;
+}
 
-#powerButton {
-    width: 100%;
+.row .connected { color: #b8e6d0; }
+
+.controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
     margin-top: 20px;
-    padding: 15px;
+}
+
+button {
+    padding: 14px;
     border: 1px solid #516773;
     background: #0b151b;
     color: #dbe7ec;
     font: inherit;
-    letter-spacing: .15em;
+    letter-spacing: .08em;
     cursor: pointer;
 }
 
-#powerButton:hover { background: #11212a; }
-#powerButton:active { transform: translateY(1px); }
+button:hover { background: #11212a; }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: .5; cursor: wait; }
+
+.message {
+    min-height: 1.3em;
+    text-align: center;
+    color: #78909c;
+    font-size: .82rem;
+    margin: 20px 0 0;
+}
 
 footer { text-align: center; margin-top: 24px; }
+
+@media (max-width: 650px) {
+    .network-field { flex-direction: column; padding: 25px 0; }
+    .cable { left: 50%; right: auto; width: 3px; height: 70%; top: 15%; }
+}
