@@ -663,11 +663,17 @@ func _set_selected_ip() -> void:
 	if not _valid_ipv4_host_24(ip_buffer):
 		_error("Cannot configure IPv4: address cannot be a network or broadcast address.")
 		return
-	if _device_has_link(selected_id) and other_id != -1:
-		var other_device := _get_device(other_id)
-		if not other_device.is_empty() and other_device.ip != "" and not _same_subnet_24(ip_buffer, other_device.ip):
-			_error("Cannot configure IPv4: connected computers must be on the same /24 subnet.")
-			return
+	for link in ethernet_links:
+		var peer_id := -1
+		if link.source_id == selected_id:
+			peer_id = link.target_id
+		elif link.target_id == selected_id:
+			peer_id = link.source_id
+		if peer_id != -1:
+			var peer_device := _get_device(peer_id)
+			if not peer_device.is_empty() and peer_device.ip != "" and not _same_subnet_24(ip_buffer, peer_device.ip):
+				_error("Cannot configure IPv4: connected computers must be on the same /24 subnet.")
+				return
 	for d in devices:
 		if d.id != selected_id and d.ip == ip_buffer:
 			_error(ip_buffer + " is already in use.")
