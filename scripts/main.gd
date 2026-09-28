@@ -158,7 +158,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.ctrl_pressed:
 		# Use both logical and physical key codes so Ctrl shortcuts work
 		# consistently across keyboard layouts and Godot window focus states.
-		var shortcut_key := event.keycode
+		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
 		if shortcut_key == KEY_P:
