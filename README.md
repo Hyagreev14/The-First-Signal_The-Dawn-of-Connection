@@ -25,6 +25,31 @@ The networking isn't just the setting — **it's the game.**
 
 The project has moved from the early browser prototype into a native Godot game.
 
+### v0.0001 — Browser Prototype
+
+- One computer
+- Generated MAC address
+- Power system
+- Basic browser interface
+
+### v0.0002 — Browser Prototype
+
+- Two computers
+- Generated MAC address for each computer
+- Individual computer power controls
+- Physical Ethernet connection between computers
+- Ethernet link only works when both computers are powered on
+- Basic network visualization
+
+### v0.0003 — Browser Prototype
+
+- IPv4 addresses for computers
+- Manual IPv4 configuration
+- IPv4 validation
+- Duplicate IP detection
+- Same /24 subnet validation
+- Basic IPv4 LAN state
+
 ### v0.001 — The Simulation Foundation
 
 - Native Godot 2D game project
@@ -45,31 +70,11 @@ The project has moved from the early browser prototype into a native Godot game.
 - Initial IPv4 fields ready for the networking simulation
 - Dark, cold, technical visual direction
 - Foundation for future routers, switches, Wi-Fi, DHCP, IPv6, DNS, ISPs, ASNs, IXPs, and multiplayer
-
-### v0.0003 — Browser Prototype
-
-- IPv4 addresses for computers
-- Manual IPv4 configuration
-- IPv4 validation
-- Duplicate IP detection
-- Same /24 subnet validation
-- Basic IPv4 LAN state
-
-### v0.0002 — Browser Prototype
-
-- Two computers
-- Generated MAC address for each computer
-- Individual computer power controls
-- Physical Ethernet connection between computers
-- Ethernet link only works when both computers are powered on
-- Basic network visualization
-
-### v0.0001 — Browser Prototype
-
-- One computer
-- Generated MAC address
-- Power system
-- Basic browser interface
+- Right-click device context menu
+- Power devices on/off
+- Connect and disconnect Ethernet
+- Configure IPv4 addresses
+- IPv4 validation and duplicate-address checks
 
 More networking mechanics will be introduced gradually as development continues.
 
