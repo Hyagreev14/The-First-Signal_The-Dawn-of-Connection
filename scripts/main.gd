@@ -155,9 +155,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 		_zoom_at(event.position, 0.9)
 
-	if event is InputEventKey and event.pressed and not event.echo and event.ctrl_pressed:
-		# Use both logical and physical key codes so Ctrl shortcuts work
-		# consistently across keyboard layouts and Godot window focus states.
+	if event is InputEventKey and event.pressed and not event.echo and event.ctrl_pressed and event.alt_pressed:
 		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
@@ -341,13 +339,13 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "IPv4", d.ip if d.ip != "" else "—", 218)
 	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
-	_draw_inspector_button(panel, Rect2(18, 350, 112, 32), "POWER  [Ctrl+P]")
-	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [Ctrl+C]")
-	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [Ctrl+R]")
-	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [Ctrl+I]")
-	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [Ctrl+E]")
+	_draw_inspector_button(panel, Rect2(18, 350, 112, 32), "POWER  [Ctrl+Alt+P]")
+	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [Ctrl+Alt+C]")
+	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [Ctrl+Alt+R]")
+	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [Ctrl+Alt+I]")
+	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [Ctrl+Alt+E]")
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 486), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "Ctrl+F center   Ctrl++ / Ctrl+- zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "Ctrl+Alt+F center   Ctrl+Alt++ / Ctrl+Alt+- zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
 
 func _draw_inspector_button(panel: Rect2, local_rect: Rect2, label: String) -> void:
 	var r := Rect2(panel.position + local_rect.position, local_rect.size)
