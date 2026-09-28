@@ -1,6 +1,7 @@
 const message = document.getElementById("message");
 const linkStatus = document.getElementById("linkStatus");
 const cable = document.getElementById("cable");
+const connectButton = document.getElementById("connectButton");
 
 async function request(path, options = {}) {
     const response = await fetch(path, { method: "POST", ...options });
@@ -41,6 +42,10 @@ function render(state) {
     linkStatus.classList.toggle("connected", connected);
     cable.classList.toggle("connected", connected);
 
+    if (connectButton) {
+        connectButton.textContent = connected ? "DISCONNECT ETHERNET" : "CONNECT ETHERNET";
+    }
+
     if (connected && state.computers.every((computer) => computer.ip)) {
         message.textContent = "Two computers. One Ethernet link. One IPv4 LAN.";
     } else if (state.computers.length < 2) {
@@ -79,7 +84,6 @@ if (buildButton) {
     });
 }
 
-const connectButton = document.getElementById("connectButton");
 if (connectButton) {
     connectButton.addEventListener("click", async () => {
         connectButton.disabled = true;
