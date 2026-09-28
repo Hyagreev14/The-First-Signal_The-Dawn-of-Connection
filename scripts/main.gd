@@ -9,7 +9,7 @@ var devices := [
 		"id": 1,
 		"name": "COMPUTER 01",
 		"kind": "Computer",
-		"position": Vector2(720, 720),
+		"position": Vector2(330, 300),
 		"powered": false,
 		"mac": "",
 		"ip": ""
@@ -18,7 +18,7 @@ var devices := [
 		"id": 2,
 		"name": "COMPUTER 02",
 		"kind": "Computer",
-		"position": Vector2(1180, 720),
+		"position": Vector2(650, 300),
 		"powered": false,
 		"mac": "",
 		"ip": ""
@@ -104,12 +104,12 @@ func _draw() -> void:
 func _draw_world(screen: Vector2) -> void:
 	var world_rect := Rect2(Vector2(0, 64), Vector2(screen.x, screen.y - 118))
 	draw_rect(world_rect, Color("#0b1017"))
-	
-	# Infinite-feeling technical grid.
 	var spacing := 64.0 * zoom
 	var origin := Vector2(0, 64) + camera_offset
-	while origin.x > 0: origin.x -= spacing
-	while origin.y > 64: origin.y -= spacing
+	while origin.x > 0:
+		origin.x -= spacing
+	while origin.y > 64:
+		origin.y -= spacing
 	var x := origin.x
 	while x < screen.x:
 		draw_line(Vector2(x, 64), Vector2(x, screen.y - 54), Color(0.12, 0.16, 0.21, 0.75), 1.0)
@@ -120,7 +120,6 @@ func _draw_world(screen: Vector2) -> void:
 			draw_line(Vector2(0, y), Vector2(screen.x, y), Color(0.12, 0.16, 0.21, 0.75), 1.0)
 		y += spacing
 
-	# Cable first, so devices sit above it.
 	if ethernet_connected:
 		var a := _world_to_screen(_get_device(1).position)
 		var b := _world_to_screen(_get_device(2).position)
@@ -131,7 +130,7 @@ func _draw_world(screen: Vector2) -> void:
 		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 180.0)
 		var packet := pa.lerp(pb, fmod(Time.get_ticks_msec() / 1800.0, 1.0))
 		draw_circle(packet, 5.0 + pulse * 2.0, Color("#b8ffdc"))
-	
+
 	for d in devices:
 		_draw_device(d)
 
@@ -149,7 +148,7 @@ func _draw_device(d: Dictionary) -> void:
 	draw_rect(rect.grow(-3), body, true)
 	draw_rect(Rect2(pos + Vector2(0, size.y - 30 * zoom), Vector2(size.x, 30 * zoom)), Color("#10161f"), true)
 	draw_rect(rect.grow(-3), edge, false, 2.0)
-	
+
 	var screen_rect := Rect2(pos + Vector2(20, 17) * zoom, Vector2(130, 55) * zoom)
 	draw_rect(screen_rect, Color("#071016"), true)
 	draw_rect(screen_rect, Color("#263441"), false, 2.0)
@@ -219,7 +218,7 @@ func _create_computer() -> void:
 		next_id = max(next_id, int(d.id) + 1)
 
 	var spawn_index := devices.size() - 1
-	var new_position := Vector2(720 + (spawn_index % 4) * 250, 940 + (spawn_index / 4) * 180)
+	var new_position := Vector2(350 + (spawn_index % 4) * 250, 520 + (spawn_index / 4) * 180)
 	var new_device := {
 		"id": next_id,
 		"name": "COMPUTER %02d" % next_id,
