@@ -21,6 +21,7 @@ var toast_time := 0.0
 var toast_is_error := false
 var last_error := ""
 var error_popup_visible := false
+var packet_direction := 1.0
 var context_device_id := -1
 var context_position := Vector2.ZERO
 var connection_menu := false
@@ -160,8 +161,13 @@ func _draw_world(screen: Vector2) -> void:
 		draw_line(pa, pb, Color("#18212c"), 10.0 * zoom, true)
 		draw_line(pa, pb, Color("#5ee6a8"), 3.0 * zoom, true)
 		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 180.0)
-		var packet := pa.lerp(pb, fmod(Time.get_ticks_msec() / 1800.0, 1.0))
+		var cycle := fmod(Time.get_ticks_msec() / 1800.0, 2.0)
+		var packet_t := cycle if cycle <= 1.0 else 2.0 - cycle
+		var packet := pa.lerp(pb, packet_t)
 		draw_circle(packet, 5.0 + pulse * 2.0, Color("#b8ffdc"))
+		var packet_t_reverse := 1.0 - packet_t
+		var reverse_packet := pa.lerp(pb, packet_t_reverse)
+		draw_circle(reverse_packet, 5.0 + pulse * 2.0, Color("#b8ffdc"))
 
 	for d in devices:
 		_draw_device(d)
@@ -224,9 +230,6 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 360), "Right-click for device actions", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
-	if last_error != "":
-		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 402), "LAST ERROR", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#d66a73"))
-		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 421), last_error, HORIZONTAL_ALIGNMENT_LEFT, 232, 10, Color("#ffb9bf"))
 
 func _field(panel: Rect2, label: String, value: String, y: float) -> void:
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
