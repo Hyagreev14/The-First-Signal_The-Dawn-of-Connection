@@ -495,6 +495,17 @@ func _set_selected_ip() -> void:
 		editing_ip = false
 		_error("Cannot configure IPv4: invalid address.")
 		return
+	if not _valid_ipv4_host_24(ip_buffer):
+		editing_ip = false
+		_error("Cannot configure IPv4: address cannot be a network or broadcast address.")
+		return
+	var other_id := ethernet_target_id if ethernet_source_id == selected_id else ethernet_source_id
+	if _device_has_link(selected_id) and other_id != -1:
+		var other_device := _get_device(other_id)
+		if not other_device.is_empty() and other_device.ip != "" and not _same_subnet_24(ip_buffer, other_device.ip):
+			editing_ip = false
+			_error("Cannot configure IPv4: connected computers must be on the same /24 subnet.")
+			return
 	for d in devices:
 		if d.id != selected_id and d.ip == ip_buffer:
 			editing_ip = false
@@ -616,6 +627,20 @@ func _zoom_at(screen_pos: Vector2, factor: float) -> void:
 	var after := _screen_to_world(screen_pos)
 	camera_offset += (after - before) * zoom
 	queue_redraw()
+
+func _valid_ipv4_host_24(ip: String) -> bool:
+	if not _valid_ipv4(ip):
+		return false
+	var parts := ip.split(".")
+	var last := int(parts[3])
+	return last > 0 and last < 255
+
+func _same_subnet_24(a: String, b: String) -> bool:
+	if not _valid_ipv4(a) or not _valid_ipv4(b):
+		return false
+	var ap := a.split(".")
+	var bp := b.split(".")
+	return ap[0] == bp[0] and ap[1] == bp[1] and ap[2] == bp[2]
 
 func _valid_ipv4(ip: String) -> bool:
 	var parts := ip.split(".")
