@@ -188,15 +188,15 @@ func _input(event: InputEvent) -> void:
 			else:
 				_perform_inspector_action("inspect")
 			return
-		elif shortcut_key == KEY_F6:
+		elif shortcut_key == KEY_HOME:
 			camera_offset = Vector2.ZERO
 			zoom = 0.9
 			queue_redraw()
 			return
-		elif shortcut_key == KEY_F7:
+		elif shortcut_key == KEY_PAGEUP:
 			_zoom_at(get_viewport_rect().size * 0.5, 1.1)
 			return
-		elif shortcut_key == KEY_F8:
+		elif shortcut_key == KEY_PAGEDOWN:
 			_zoom_at(get_viewport_rect().size * 0.5, 0.9)
 			return
 
