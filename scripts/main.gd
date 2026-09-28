@@ -134,7 +134,7 @@ func _draw_device(d: Dictionary) -> void:
 	var pos := _world_to_screen(d.position)
 	var size := DEVICE_SIZE * zoom
 	var rect := Rect2(pos, size)
-	var selected := d.id == selected_id
+	var selected: bool = d.id == selected_id
 	var body := Color("#141b24") if d.powered else Color("#0f141b")
 	var edge := Color("#5ee6a8") if d.powered else Color("#34404d")
 	if selected:
