@@ -1,0 +1,26 @@
+[application]
+config/name="The First Signal"
+config/description="The Dawn of Connection — a network-building simulation game."
+run/main_scene="res://scenes/Main.tscn"
+
+[display]
+window/size/viewport_width=1440
+window/size/viewport_height=900
+window/size/window_width_override=1440
+window/size/window_height_override=900
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+
+[input]
+toggle_power={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":80,"unicode":112)]
+}
+center_world={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":70,"unicode":102)]
+}
