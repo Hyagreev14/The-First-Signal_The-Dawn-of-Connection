@@ -371,13 +371,14 @@ func _draw_shop(screen: Vector2) -> void:
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 53), "Order equipment and wait for delivery.", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#718594"))
 	_shop_item(panel, Rect2(18, 78, 464, 92), "COMPUTER", "Basic network computer", 100, 5.0)
 	_shop_item(panel, Rect2(18, 180, 464, 92), "ETHERNET CABLE", "Standard Ethernet cable", 25, 2.0)
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 306), "INVENTORY", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 327), "Ethernet cables ready: %d" % ethernet_inventory, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#c9d6de"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 356), "ACTIVE DELIVERIES", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
+	_shop_item(panel, Rect2(18, 282, 464, 92), "ETHERNET PORT", "Add one physical Ethernet port", PORT_COST, PORT_DELIVERY_TIME)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 408), "INVENTORY", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 429), "Ethernet cables ready: %d" % ethernet_inventory, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#c9d6de"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 458), "ACTIVE DELIVERIES", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
 	if deliveries.is_empty():
-		draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 378), "No deliveries in transit.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, 480), "No deliveries in transit.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
 	else:
-		var y := 378.0
+		var y := 480.0
 		for delivery in deliveries:
 			draw_string(ThemeDB.fallback_font, panel.position + Vector2(22, y), "%s — %.1fs" % [delivery.item, delivery.time_left], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#72efb1"))
 			y += 20
@@ -408,6 +409,8 @@ func _shop_action_at(pos: Vector2) -> String:
 		return "buy_computer"
 	if Rect2(370, 205, 96, 40).has_point(local):
 		return "buy_ethernet"
+	if Rect2(370, 307, 96, 40).has_point(local):
+		return "buy_port"
 	if Rect2(panel.size.x - 118, panel.size.y - 48, 96, 32).has_point(local):
 		return "close"
 	return ""
@@ -419,15 +422,21 @@ func _perform_shop_action(action: String) -> void:
 		_place_order("COMPUTER", COMPUTER_COST, COMPUTER_DELIVERY_TIME)
 	elif action == "buy_ethernet":
 		_place_order("ETHERNET CABLE", ETHERNET_COST, ETHERNET_DELIVERY_TIME)
+	elif action == "buy_port":
+		if selected_id == -1 or _get_device(selected_id).is_empty():
+			_error("Cannot order an Ethernet port: select a computer first.")
+			return
+		var target := _get_device(selected_id)
+		_place_order("ETHERNET PORT", PORT_COST, PORT_DELIVERY_TIME, target.id, target.name)
 	queue_redraw()
 
-func _place_order(item: String, cost: int, delivery_time: float) -> void:
+func _place_order(item: String, cost: int, delivery_time: float, target_id: int = -1, target_name: String = "") -> void:
 	if not test_mode and money < cost:
 		_error("Cannot order " + item + ": insufficient funds. Cost: $%d." % cost)
 		return
 	if not test_mode:
 		money -= cost
-	deliveries.append({"item": item, "time_left": delivery_time})
+	deliveries.append({"item": item, "time_left": delivery_time, "target_id": target_id, "target_name": target_name})
 	_toast(item + " ordered. Delivery in %.0f seconds." % delivery_time)
 
 func _deliver_order(delivery: Dictionary) -> void:
@@ -436,6 +445,13 @@ func _deliver_order(delivery: Dictionary) -> void:
 	elif delivery.item == "ETHERNET CABLE":
 		ethernet_inventory += 1
 		_toast("Delivery arrived: Ethernet cable added to inventory.")
+	elif delivery.item == "ETHERNET PORT":
+		var target := _get_device(delivery.target_id)
+		if target.is_empty():
+			_error("Port delivery failed: destination computer no longer exists.")
+			return
+		target.ports = int(target.ports) + 1
+		_toast("Delivery arrived: Ethernet port installed on " + target.name + ".")
 
 
 
