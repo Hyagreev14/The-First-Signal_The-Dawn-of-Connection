@@ -62,6 +62,7 @@
         <p class="message" id="message">A second machine is waiting to exist.</p>
         <footer>THE NETWORK BEGINS WITH YOU.</footer>
     </main>
+    <script>window.__GAME_STATE__ = {{ game|tojson }};</script>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
 </body>
 </html>
