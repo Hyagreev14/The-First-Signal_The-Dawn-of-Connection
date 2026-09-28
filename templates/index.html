@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The First Signal — v0.0001</title>
+    <title>The First Signal — v0.0002</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -13,26 +13,53 @@
                 <span class="eyebrow">THE FIRST SIGNAL</span>
                 <h1>The Dawn of Connection</h1>
             </div>
-            <span class="version">v0.0001</span>
+            <span class="version">v0.0002</span>
         </header>
 
-        <section class="network-field">
-            <div class="computer" id="computer">
-                <div class="led" id="led"></div>
+        <section class="network-field" id="networkField">
+            <div class="cable" id="cable"></div>
+
+            {% for computer in game.computers %}
+            <div class="computer" id="computer-{{ computer.id }}">
+                <div class="led"></div>
                 <div class="computer-icon">▣</div>
-                <strong>COMPUTER</strong>
-                <span id="status">OFFLINE</span>
+                <strong>COMPUTER {{ computer.id }}</strong>
+                <span class="status">OFFLINE</span>
             </div>
+            {% endfor %}
         </section>
 
         <section class="system-panel">
-            <div class="panel-title">SYSTEM</div>
-            <div class="row"><span>MAC ADDRESS</span><code>{{ game.mac }}</code></div>
-            <div class="row"><span>POWER</span><strong id="power">OFF</strong></div>
+            <div class="panel-title">NETWORK</div>
+
+            {% for computer in game.computers %}
+            <div class="row">
+                <span>COMPUTER {{ computer.id }} · MAC</span>
+                <code>{{ computer.mac }}</code>
+            </div>
+            {% endfor %}
+
+            <div class="row">
+                <span>ETHERNET LINK</span>
+                <strong id="linkStatus">DISCONNECTED</strong>
+            </div>
         </section>
 
-        <button id="powerButton" type="button">POWER ON</button>
+        <div class="controls">
+            {% for computer in game.computers %}
+            <button class="power-button" data-id="{{ computer.id }}" type="button">
+                POWER ON · COMPUTER {{ computer.id }}
+            </button>
+            {% endfor %}
 
+            {% if game.computers|length < 2 %}
+            <button id="buildButton" type="button">BUILD SECOND COMPUTER</button>
+            {% else %}
+            <button id="connectButton" type="button">CONNECT ETHERNET</button>
+            {% endif %}
+        </div>
+
+        <p class="message" id="message">A second machine is waiting to exist.</p>
         <footer>THE NETWORK BEGINS WITH YOU.</footer>
     </main>
     <script src="{{ url_for('static', filename='game.js') }}"></script>
