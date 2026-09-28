@@ -63,12 +63,12 @@ if (buildButton) {
     buildButton.addEventListener("click", async () => {
         buildButton.disabled = true;
         try {
+            await request("/api/build-computer");
             window.location.reload();
         } catch (error) {
             message.textContent = error.message;
+            buildButton.disabled = false;
         }
-        await request("/api/build-computer");
-        window.location.reload();
     });
 }
 
@@ -86,7 +86,4 @@ if (connectButton) {
     });
 }
 
-render({
-    computers: window.__GAME_STATE__ || [],
-    ethernet_connected: false,
-});
+render(window.__GAME_STATE__);
