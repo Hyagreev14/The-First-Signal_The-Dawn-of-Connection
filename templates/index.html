@@ -75,7 +75,7 @@
                     COMPUTER {{ computer.id }}
                     <input
                         name="ip_{{ computer.id }}"
-                        value="{{ computer.ip or ('192.168.0.' ~ computer.id + 1) }}"
+                        value="{{ computer.ip or ('192.168.0.' ~ (computer.id + 1)) }}"
                         inputmode="decimal"
                         autocomplete="off"
                         maxlength="15"
