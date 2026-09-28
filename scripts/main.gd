@@ -3,12 +3,14 @@ extends Node2D
 const WORLD_SIZE := Vector2(2600, 1800)
 const DEVICE_SIZE := Vector2(170, 110)
 const SHOP_BUTTON := Rect2(24, 78, 190, 42)
-const SHOP_SIZE := Vector2(500, 430)
+const SHOP_SIZE := Vector2(500, 560)
 const CURRENCY_START := 1000
 const COMPUTER_COST := 100
 const ETHERNET_COST := 25
+const PORT_COST := 50
 const COMPUTER_DELIVERY_TIME := 5.0
 const ETHERNET_DELIVERY_TIME := 2.0
+const PORT_DELIVERY_TIME := 3.0
 const REDEEM_BUTTON := Rect2(24, 128, 190, 36)
 const MENU_SIZE := Vector2(250, 240)
 
@@ -48,6 +50,9 @@ var inspecting_id := -1
 
 func _ready() -> void:
 	randomize()
+	for d in devices:
+		if not d.has("ports"):
+			d.ports = 1
 	queue_redraw()
 
 func _process(delta: float) -> void:
@@ -431,4 +436,607 @@ func _deliver_order(delivery: Dictionary) -> void:
 	elif delivery.item == "ETHERNET CABLE":
 		ethernet_inventory += 1
 		_toast("Delivery arrived: Ethernet cable added to inventory.")
+
+
+
+func _draw_inspector(screen: Vector2) -> void:
+	var panel := Rect2(screen.x - 300, 82, 270, 620)
+	draw_rect(panel, Color(0.035, 0.05, 0.07, 0.96), true)
+	draw_rect(panel, Color("#263541"), false, 1)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 28), "DEVICE INSPECTOR", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#728696"))
+	if selected_id == -1:
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 75), "No device selected", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#c7d4dc"))
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 101), "Build a computer to begin.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#647785"))
+		return
+	var d := _get_device(selected_id)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 72), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#eef6fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 96), d.kind, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+	_field(panel, "POWER", "ON" if d.powered else "OFF", 130)
+	_field(panel, "MAC", d.mac, 174)
+	_field(panel, "IPv4", d.ip if d.ip != "" else "—", 218)
+	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
+	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
+	_draw_inspector_button(panel, Rect2(18, 350, 112, 32), "POWER  [F1]")
+	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [F2]")
+	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [F3]")
+	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [F4]")
+	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [F7]")
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 486), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "HOME center   PgUp / PgDn zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+
+func _draw_inspector_button(panel: Rect2, local_rect: Rect2, label: String) -> void:
+	var r := Rect2(panel.position + local_rect.position, local_rect.size)
+	draw_rect(r, Color("#111b24"), true)
+	draw_rect(r, Color("#344553"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, r.position + Vector2(8, 21), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#d2e0e8"))
+
+func _inspector_action_at(screen_pos: Vector2) -> String:
+	if selected_id == -1:
+		return ""
+	var panel := Rect2(get_viewport_rect().size.x - 300, 82, 270, 620)
+	var local := screen_pos - panel.position
+	if Rect2(18, 350, 112, 32).has_point(local): return "power"
+	if Rect2(140, 350, 112, 32).has_point(local): return "connect"
+	if Rect2(18, 388, 112, 32).has_point(local): return "rename"
+	if Rect2(140, 388, 112, 32).has_point(local): return "ip"
+	if Rect2(18, 426, 234, 32).has_point(local): return "inspect"
+	return ""
+
+func _perform_inspector_action(action: String) -> void:
+	if action == "power":
+		_toggle_selected_power()
+	elif action == "connect":
+		_open_connection_menu(selected_id)
+	elif action == "rename":
+		_begin_name_edit(selected_id)
+	elif action == "ip":
+		_begin_ip_edit(selected_id)
+	elif action == "inspect":
+		_toast("Inspecting " + _get_device(selected_id).name + ".")
+	queue_redraw()
+
+func _field(panel: Rect2, label: String, value: String, y: float) -> void:
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, y + 19), value, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#c9d6de"))
+
+func _draw_controls(screen: Vector2) -> void:
+	var bar := Rect2(0, screen.y - 54, screen.x, 54)
+	draw_rect(bar, Color("#0a0e14"), true)
+	draw_line(Vector2(0, screen.y - 54), Vector2(screen.x, screen.y - 54), Color("#202b36"), 1)
+	draw_string(ThemeDB.fallback_font, Vector2(22, screen.y - 22), "LMB  SELECT / DRAG     RMB  DEVICE MENU     MMB  PAN     WHEEL  ZOOM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+	var status := "ETHERNET LINKS  ● %d ACTIVE" % ethernet_links.size() if ethernet_links.size() > 0 else "ETHERNET LINKS  ○ OFFLINE"
+	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 270, screen.y - 22), status, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#72efb1") if ethernet_links.size() > 0 else Color("#718594"))
+
+func _draw_context_menu() -> void:
+	var menu := Rect2(context_position, MENU_SIZE)
+	draw_rect(menu, Color("#0c1219"), true)
+	draw_rect(menu, Color("#415462"), false, 1.0)
+
+	if connection_menu:
+		var source := _get_device(connection_source_id)
+		draw_string(ThemeDB.fallback_font, menu.position + Vector2(14, 23), "CONNECT FROM " + source.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#edf5fa"))
+		draw_line(menu.position + Vector2(12, 32), menu.position + Vector2(menu.size.x - 12, 32), Color("#273640"), 1)
+		var row := 42.0
+		for d in devices:
+			if d.id == connection_source_id:
+				continue
+			var action := "target:%d" % d.id
+			_context_item(menu, Rect2(8, row, menu.size.x - 16, 32), d.name, action)
+			row += 36.0
+		_context_item(menu, Rect2(8, menu.size.y - 40, menu.size.x - 16, 32), "CANCEL", "cancel_connect")
+		return
+
+	var d := _get_device(context_device_id)
+	draw_string(ThemeDB.fallback_font, menu.position + Vector2(14, 23), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#edf5fa"))
+	draw_line(menu.position + Vector2(12, 32), menu.position + Vector2(menu.size.x - 12, 32), Color("#273640"), 1)
+
+	_context_item(menu, Rect2(8, 40, menu.size.x - 16, 34), "POWER " + ("OFF" if d.powered else "ON"), "power")
+	_context_item(menu, Rect2(8, 76, menu.size.x - 16, 34), "DISCONNECT ETHERNET" if _device_has_link(d.id) else "CONNECT ETHERNET", "disconnect" if _device_has_link(d.id) else "connect")
+	_context_item(menu, Rect2(8, 112, menu.size.x - 16, 34), "RENAME COMPUTER", "rename")
+	_context_item(menu, Rect2(8, 148, menu.size.x - 16, 34), "CONFIGURE IPv4", "ip")
+
+func _context_item(menu: Rect2, item: Rect2, label: String, action: String) -> void:
+	draw_rect(Rect2(menu.position + item.position, item.size), Color("#111b24"), true)
+	draw_string(ThemeDB.fallback_font, menu.position + item.position + Vector2(12, 22), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#d2e0e8"))
+
+func _context_action_at(pos: Vector2) -> String:
+	var local := pos - context_position
+	if local.x < 8 or local.x > MENU_SIZE.x - 8:
+		return ""
+	if connection_menu:
+		var row := 42.0
+		for d in devices:
+			if d.id == connection_source_id:
+				continue
+			if local.y >= row and local.y < row + 32.0:
+				return "target:%d" % d.id
+			row += 36.0
+		if local.y >= MENU_SIZE.y - 40 and local.y < MENU_SIZE.y - 8:
+			return "cancel_connect"
+		return ""
+
+	if local.y >= 40 and local.y < 74:
+		return "power"
+	if local.y >= 76 and local.y < 110:
+		return "disconnect" if _device_has_link(context_device_id) else "connect"
+	if local.y >= 112 and local.y < 146:
+		return "rename"
+	if local.y >= 148 and local.y < 182:
+		return "ip"
+	return ""
+
+func _perform_context_action(action: String) -> void:
+	if action == "connect":
+		_open_connection_menu(context_device_id)
+		return
+
+	if action.begins_with("target:"):
+		var target_id := int(action.trim_prefix("target:"))
+		_connect_ethernet(connection_source_id, target_id)
+		context_device_id = -1
+		connection_menu = false
+		connection_source_id = -1
+		queue_redraw()
+		return
+
+	if action == "cancel_connect":
+		context_device_id = -1
+		connection_menu = false
+		connection_source_id = -1
+		queue_redraw()
+		return
+
+	var id := context_device_id
+	context_device_id = -1
+	selected_id = id
+
+	if action == "power":
+		_toggle_selected_power()
+	elif action == "disconnect":
+		_disconnect_ethernet()
+	elif action == "rename":
+		_begin_name_edit(id)
+	elif action == "ip":
+		_begin_ip_edit(id)
+	queue_redraw()
+
+func _open_connection_menu(source_id: int) -> void:
+	connection_source_id = source_id
+	context_device_id = source_id
+	connection_menu = true
+	var source := _get_device(source_id)
+	var screen_pos := _world_to_screen(source.position)
+	var screen := get_viewport_rect().size
+	# Keyboard/inspector connection menus are independent of the RMB device menu.
+	context_position = screen_pos + Vector2(28, -20)
+	context_position.x = clamp(context_position.x, 10.0, screen.x - MENU_SIZE.x - 10.0)
+	context_position.y = clamp(context_position.y, 10.0, screen.y - MENU_SIZE.y - 64.0)
+	_toast("Choose which computer to connect to.")
+	queue_redraw()
+
+func _connect_ethernet(source_id: int, target_id: int) -> void:
+	var source := _get_device(source_id)
+	var target := _get_device(target_id)
+	if source.is_empty() or target.is_empty():
+		_error("Cannot connect: device not found.")
+		return
+	if source_id == target_id:
+		_error("Cannot connect: a computer cannot connect to itself.")
+		return
+	if not source.powered:
+		_error("This device, " + source.name + ", is powered off.")
+		return
+	if not target.powered:
+		_error("The destination computer, " + target.name + ", is powered off.")
+		return
+	if _link_exists(source_id, target_id):
+		_error("Cannot connect: these computers already have an Ethernet link.")
+		return
+	var source_port := _free_port(source_id)
+	var target_port := _free_port(target_id)
+	if source_port == -1:
+		_error(source.name + " has no free Ethernet ports. Buy another port from the Network Supply Shop.")
+		return
+	if target_port == -1:
+		_error(target.name + " has no free Ethernet ports. Buy another port from the Network Supply Shop.")
+		return
+	if not test_mode and ethernet_inventory <= 0:
+		_error("Cannot connect: no Ethernet cables in inventory. Order one from the Network Supply Shop.")
+		return
+	var link := {"source_id": source_id, "target_id": target_id, "source_port": source_port, "target_port": target_port, "forward_speed": 0.72, "forward_offset": randf(), "reverse_speed": 0.91, "reverse_offset": randf(), "forward_pulse_speed": 5.1, "forward_pulse_offset": randf() * TAU, "reverse_pulse_speed": 6.4, "reverse_pulse_offset": randf() * TAU}
+	ethernet_links.append(link)
+	if not test_mode:
+		ethernet_inventory -= 1
+	if not first_link_reward_claimed:
+		first_link_reward_claimed = true
+		if not test_mode:
+			money += 150
+		_toast("Ethernet connected. First LAN job complete: +$150.")
+	else:
+		_toast("Ethernet connected: %s [P%d] ↔ %s [P%d]" % [source.name, source_port, target.name, target_port])
+func _disconnect_ethernet() -> void:
+	ethernet_links.clear()
+	_toast("All Ethernet links disconnected.")
+
+func _free_port(id: int) -> int:
+	var device := _get_device(id)
+	if device.is_empty():
+		return -1
+	for port_number in range(1, int(device.ports) + 1):
+		if not _port_is_occupied(id, port_number):
+			return port_number
+	return -1
+
+func _free_port_count(id: int) -> int:
+	var device := _get_device(id)
+	if device.is_empty():
+		return 0
+	var count := 0
+	for port_number in range(1, int(device.ports) + 1):
+		if not _port_is_occupied(id, port_number):
+			count += 1
+	return count
+
+func _port_is_occupied(id: int, port_number: int) -> bool:
+	for link in ethernet_links:
+		if (link.source_id == id and link.source_port == port_number) or (link.target_id == id and link.target_port == port_number):
+			return true
+	return false
+
+func _device_has_link(id: int) -> bool:
+	for link in ethernet_links:
+		if link.source_id == id or link.target_id == id:
+			return true
+	return false
+
+func _link_exists(a: int, b: int) -> bool:
+	for link in ethernet_links:
+		if (link.source_id == a and link.target_id == b) or (link.source_id == b and link.target_id == a):
+			return true
+	return false
+
+func _disconnect_device_links(id: int) -> void:
+	var kept: Array = []
+	for link in ethernet_links:
+		if link.source_id != id and link.target_id != id:
+			kept.append(link)
+	ethernet_links = kept
+	_toast("Ethernet links disconnected from " + _get_device(id).name + ".")
+
+func _begin_ip_edit(id: int) -> void:
+	var d := _get_device(id)
+	if d.is_empty():
+		_error("Cannot configure IPv4: device not found.")
+		return
+	if not _device_has_link(id):
+		_error("Cannot configure IPv4: no active Ethernet link.")
+		return
+	if not d.powered:
+		_toast("Cannot configure IPv4: " + d.name + " is powered OFF.")
+		return
+	ip_buffer = d.ip
+	editing_ip = true
+	_toast("Type IPv4 address, then press Enter. Esc cancels.")
+	queue_redraw()
+
+func _handle_ip_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			editing_ip = false
+			queue_redraw()
+			return
+		if event.keycode == KEY_ENTER:
+			_set_selected_ip()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			ip_buffer = ip_buffer.left(max(0, ip_buffer.length() - 1))
+			queue_redraw()
+			return
+		if event.unicode >= 48 and event.unicode <= 57:
+			if ip_buffer.length() < 15:
+				ip_buffer += char(event.unicode)
+				queue_redraw()
+			return
+		if event.unicode == 46:
+			if ip_buffer.length() < 15:
+				ip_buffer += "."
+				queue_redraw()
+
+func _begin_name_edit(id: int) -> void:
+	var d := _get_device(id)
+	if d.is_empty():
+		_error("Cannot rename: device not found.")
+		return
+	name_buffer = d.name
+	editing_name = true
+	_toast("Type a computer name, then press Enter. Esc cancels.")
+	queue_redraw()
+
+func _handle_name_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			editing_name = false
+			queue_redraw()
+			return
+		if event.keycode == KEY_ENTER:
+			_set_selected_name()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			name_buffer = name_buffer.left(max(0, name_buffer.length() - 1))
+			queue_redraw()
+			return
+		if event.unicode >= 32 and event.unicode <= 126 and name_buffer.length() < 24:
+			name_buffer += char(event.unicode)
+			queue_redraw()
+
+func _set_selected_name() -> void:
+	if selected_id == -1:
+		editing_name = false
+		_error("Cannot rename: no computer is selected.")
+		return
+	var clean_name := name_buffer.strip_edges()
+	if clean_name == "":
+		_error("Computer name cannot be empty.")
+		return
+	for d in devices:
+		if d.id != selected_id and d.name.to_lower() == clean_name.to_lower():
+			_error("A computer with the name '" + clean_name + "' already exists.")
+			return
+	var selected_device := _get_device(selected_id)
+	selected_device.name = clean_name
+	editing_name = false
+	_toast("Computer renamed to " + clean_name + ".")
+	queue_redraw()
+
+func _set_selected_ip() -> void:
+	if selected_id == -1:
+		editing_ip = false
+		_error("Cannot configure IPv4: no computer is selected.")
+		return
+	if not _device_has_link(selected_id):
+		_error("Cannot configure IPv4: no active Ethernet link.")
+		return
+	var selected_device := _get_device(selected_id)
+	if not selected_device.powered:
+		_error("Cannot configure IPv4: computer is powered OFF.")
+		return
+	if not _valid_ipv4(ip_buffer):
+		_error("Cannot configure IPv4: invalid address.")
+		return
+	if not _valid_ipv4_host_24(ip_buffer):
+		_error("Cannot configure IPv4: address cannot be a network or broadcast address.")
+		return
+	if _device_has_link(selected_id) and other_id != -1:
+		var other_device := _get_device(other_id)
+		if not other_device.is_empty() and other_device.ip != "" and not _same_subnet_24(ip_buffer, other_device.ip):
+			_error("Cannot configure IPv4: connected computers must be on the same /24 subnet.")
+			return
+	for d in devices:
+		if d.id != selected_id and d.ip == ip_buffer:
+			_error(ip_buffer + " is already in use.")
+			return
+	selected_device.ip = ip_buffer
+	editing_ip = false
+	if not first_ipv4_reward_claimed:
+		first_ipv4_reward_claimed = true
+		if not test_mode:
+			money += 50
+		_toast("IPv4 configured: " + ip_buffer + " — Network setup job: +$50.")
+	else:
+		_toast("IPv4 configured: " + ip_buffer)
+	queue_redraw()
+
+
+func _draw_ip_editor(screen: Vector2) -> void:
+	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.38), true)
+	draw_rect(panel, Color("#10171f"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 38), "CONFIGURE IPv4", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 67), "Enter an IPv4 address for the selected computer.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8194a1"))
+	var field := Rect2(panel.position + Vector2(24, 84), Vector2(panel.size.x - 48, 48))
+	draw_rect(field, Color("#071016"), true)
+	draw_rect(field, Color("#5ee6a8"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), ip_buffer + ("_" if fmod(Time.get_ticks_msec() / 400.0, 2.0) < 1.0 else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  APPLY     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+
+func _draw_name_editor(screen: Vector2) -> void:
+	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.38), true)
+	draw_rect(panel, Color("#10171f"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 38), "RENAME COMPUTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 67), "Enter a new name for the selected computer.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8194a1"))
+	var field := Rect2(panel.position + Vector2(24, 84), Vector2(panel.size.x - 48, 48))
+	draw_rect(field, Color("#071016"), true)
+	draw_rect(field, Color("#5ee6a8"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), name_buffer + ("_" if fmod(Time.get_ticks_msec() / 400.0, 2.0) < 1.0 else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  APPLY     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+
+func _begin_redeem() -> void:
+	redeeming = true
+	redeem_buffer = ""
+	queue_redraw()
+
+func _handle_redeem_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			redeeming = false
+			queue_redraw()
+			return
+		if event.keycode == KEY_ENTER:
+			if redeem_buffer == "FIRSTSIGNAL-TEST":
+				test_mode = true
+				redeeming = false
+				_toast("TEST MODE ENABLED — Unlimited funds.")
+			else:
+				redeeming = false
+				_error("Invalid redeem code.")
+			queue_redraw()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			redeem_buffer = redeem_buffer.left(max(0, redeem_buffer.length() - 1))
+			queue_redraw()
+			return
+		if event.unicode >= 32 and event.unicode <= 126 and redeem_buffer.length() < 40:
+			redeem_buffer += char(event.unicode).to_upper()
+			queue_redraw()
+
+func _draw_redeem_editor(screen: Vector2) -> void:
+	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.38), true)
+	draw_rect(panel, Color("#10171f"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 38), "REDEEM TEST CODE", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 67), "Development-only code for unlimited funds.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8194a1"))
+	var field := Rect2(panel.position + Vector2(24, 84), Vector2(panel.size.x - 48, 48))
+	draw_rect(field, Color("#071016"), true)
+	draw_rect(field, Color("#5ee6a8"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), redeem_buffer, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  REDEEM     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+
+func _draw_pause_overlay(screen: Vector2) -> void:
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.48), true)
+	var panel := Rect2(Vector2(screen.x * 0.5 - 180, screen.y * 0.5 - 70), Vector2(360, 140))
+	draw_rect(panel, Color("#10151c"), true)
+	draw_rect(panel, Color("#52616d"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 48), "SIMULATION PAUSED", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 82), "Press ESC to resume.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8797a3"))
+
+func _draw_toast(screen: Vector2) -> void:
+	var box := Rect2(Vector2(24, screen.y - 108), Vector2(560, 46))
+	var fill := Color("#241417") if toast_is_error else Color("#111922")
+	var edge := Color("#a94d58") if toast_is_error else Color("#344553")
+	var text_color := Color("#ffb9bf") if toast_is_error else Color("#dce8ef")
+	draw_rect(box, fill, true)
+	draw_rect(box, edge, false, 1.0)
+	draw_string(ThemeDB.fallback_font, box.position + Vector2(14, 28), toast, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, text_color)
+
+func _draw_error_popup(screen: Vector2) -> void:
+	var popup := Rect2(Vector2(screen.x * 0.5 - 270, screen.y * 0.5 - 125), Vector2(540, 250))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.42), true)
+	draw_rect(popup.grow(5), Color(0.55, 0.12, 0.16, 0.16), true)
+	draw_rect(popup, Color("#10151c"), true)
+	draw_rect(popup, Color("#a94d58"), false, 2.0)
+	draw_rect(Rect2(popup.position, Vector2(popup.size.x, 48)), Color("#251419"), true)
+	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 31), "ERROR", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ff8791"))
+
+	# Wrap long messages so they remain fully visible instead of being clipped.
+	var message_rect := Rect2(popup.position + Vector2(22, 78), Vector2(popup.size.x - 44, 72))
+	draw_multiline_string(ThemeDB.fallback_font, message_rect.position, last_error, HORIZONTAL_ALIGNMENT_LEFT, message_rect.size.x, 14, -1, Color("#edf2f5"))
+
+	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 160), "The action could not be completed.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8797a3"))
+	var close_button := Rect2(popup.position.x + popup.size.x - 120, popup.position.y + popup.size.y - 54, 96, 34)
+	draw_rect(close_button, Color("#1b252e"), true)
+	draw_rect(close_button, Color("#52616d"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, close_button.position + Vector2(23, 22), "CLOSE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#dce6eb"))
+
+func _create_computer(from_delivery: bool = false) -> void:
+	if not from_delivery:
+		return
+	var next_id := 1
+	for d in devices:
+		next_id = max(next_id, int(d.id) + 1)
+	var spawn_index := devices.size()
+	var new_position := Vector2(350 + (spawn_index % 4) * 250, 260 + (spawn_index / 4) * 180)
+	var new_device := {"id": next_id, "name": "COMPUTER %02d" % next_id, "kind": "Computer", "position": new_position, "powered": false, "mac": _make_mac(), "ip": "", "ports": 1}
+	devices.append(new_device)
+	selected_id = next_id
+	_toast("Delivery arrived: " + new_device.name + " — 1 Ethernet port installed.")
+	queue_redraw()
+func _toggle_selected_power() -> void:
+	if selected_id == -1:
+		_error("Cannot change power: no computer is selected.")
+		return
+	var d := _get_device(selected_id)
+	d.powered = not d.powered
+	if not d.powered and _device_has_link(d.id):
+		_disconnect_device_links(d.id)
+		_toast("Powered OFF " + d.name + " — Ethernet disconnected.")
+	else:
+		_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
+
+func _delete_selected() -> void:
+	if selected_id == -1:
+		_error("Cannot delete: no computer is selected.")
+		return
+	var d := _get_device(selected_id)
+	if _device_has_link(selected_id):
+		_disconnect_device_links(selected_id)
+	devices.erase(d)
+	_toast("Deleted " + d.name + ".")
+	selected_id = -1
+	queue_redraw()
+
+func _get_device(id: int) -> Dictionary:
+	for d in devices:
+		if d.id == id:
+			return d
+	return {}
+
+func _device_at(p: Vector2) -> int:
+	for d in devices:
+		if Rect2(d.position, DEVICE_SIZE).has_point(p):
+			return d.id
+	return -1
+
+func _world_to_screen(p: Vector2) -> Vector2:
+	return p * zoom + camera_offset + Vector2(0, 64)
+
+func _screen_to_world(p: Vector2) -> Vector2:
+	return (p - camera_offset - Vector2(0, 64)) / zoom
+
+func _zoom_at(screen_pos: Vector2, factor: float) -> void:
+	var before := _screen_to_world(screen_pos)
+	zoom = clamp(zoom * factor, 0.45, 1.8)
+	var after := _screen_to_world(screen_pos)
+	camera_offset += (after - before) * zoom
+	queue_redraw()
+
+func _valid_ipv4_host_24(ip: String) -> bool:
+	if not _valid_ipv4(ip):
+		return false
+	var parts := ip.split(".")
+	var last := int(parts[3])
+	return last > 0 and last < 255
+
+func _same_subnet_24(a: String, b: String) -> bool:
+	if not _valid_ipv4(a) or not _valid_ipv4(b):
+		return false
+	var ap := a.split(".")
+	var bp := b.split(".")
+	return ap[0] == bp[0] and ap[1] == bp[1] and ap[2] == bp[2]
+
+func _valid_ipv4(ip: String) -> bool:
+	var parts := ip.split(".")
+	if parts.size() != 4:
+		return false
+	for part in parts:
+		if part == "" or not part.is_valid_int():
+			return false
+		var value := int(part)
+		if value < 0 or value > 255:
+			return false
+	return true
+
+func _make_mac() -> String:
+	var parts := []
+	for i in 6:
+		parts.append("%02X" % randi_range(0, 255))
+	return ":".join(parts)
+
+func _toast(message: String) -> void:
+	toast = message
+	toast_is_error = false
+	toast_time = 2.5
+	queue_redraw()
+
+func _error(message: String) -> void:
+	last_error = message
+	error_popup_visible = true
+	toast = ""
+	toast_is_error = true
+	toast_time = 0.0
+	queue_redraw()
+
 
