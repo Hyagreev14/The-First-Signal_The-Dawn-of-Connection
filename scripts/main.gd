@@ -161,7 +161,7 @@ func _input(event: InputEvent) -> void:
 		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
-		var shortcut_char := event.unicode
+		var shortcut_char: int = event.unicode
 		if shortcut_key == KEY_P or shortcut_char == 112 or shortcut_char == 80:
 			_toggle_selected_power()
 			return
