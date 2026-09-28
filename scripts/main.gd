@@ -558,7 +558,7 @@ func _draw_error_popup(screen: Vector2) -> void:
 	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 31), "ERROR", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ff8791"))
 
 	# Wrap long messages so they remain fully visible instead of being clipped.
-	var message_rect := Rect2(popup.position + Vector2(22, 62), Vector2(popup.size.x - 44, 72))
+	var message_rect := Rect2(popup.position + Vector2(22, 78), Vector2(popup.size.x - 44, 72))
 	draw_multiline_string(ThemeDB.fallback_font, message_rect.position, last_error, HORIZONTAL_ALIGNMENT_LEFT, message_rect.size.x, 14, -1, Color("#edf2f5"))
 
 	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 160), "The action could not be completed.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8797a3"))
