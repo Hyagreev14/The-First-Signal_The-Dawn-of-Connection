@@ -94,9 +94,9 @@ The project has moved from the early browser prototype into a native Godot game.
   - **F3** — Rename
   - **F4** — Configure IPv4
   - **F9** — Inspect
-  - **F6** — Center view
-  - **F7** — Zoom in
-  - **F8** — Zoom out
+  - **Home** — Center view
+  - **Page Up** — Zoom in
+  - **Page Down** — Zoom out
   - **Delete** — Delete selected computer
   - **Esc** — Pause / resume the simulation
 - Development-only redeem code system for unlimited-funds testing
