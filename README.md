@@ -53,9 +53,9 @@ The project has moved from the early browser prototype into a native Godot game.
 ### v0.001 — The Simulation Foundation
 
 - Native Godot 2D game project
-- Desktop-game simulation world
-- Two computer devices represented as world objects
-- **Build Computer action for creating additional computers**
+- Empty network world at game start
+- **Computers must be manually built by the player**
+- Build Computer action for creating computers
 - Newly built computers receive a unique generated MAC address
 - New computers start powered off and become immediately selectable
 - Automatic placement for newly built computers
@@ -73,6 +73,7 @@ The project has moved from the early browser prototype into a native Godot game.
 - Right-click device context menu
 - Power devices on/off
 - Connect and disconnect Ethernet
+- Choose the exact computer to connect Ethernet to
 - Configure IPv4 addresses
 - IPv4 validation and duplicate-address checks
 
