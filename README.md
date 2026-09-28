@@ -30,6 +30,10 @@ The project has moved from the early browser prototype into a native Godot game.
 - Native Godot 2D game project
 - Desktop-game simulation world
 - Two computer devices represented as world objects
+- **Build Computer action for creating additional computers**
+- Newly built computers receive a unique generated MAC address
+- New computers start powered off and become immediately selectable
+- Automatic placement for newly built computers
 - Drag devices around the network world
 - Pan the world with the middle mouse button
 - Zoom with the mouse wheel
