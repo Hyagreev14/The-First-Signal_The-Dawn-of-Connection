@@ -21,9 +21,18 @@ The networking isn't just the setting — **it's the game.**
 
 ## 🚧 Development
 
-**Current version:** `v0.0002`
+**Current version:** `v0.0003`
 
 The game is currently in very early development.
+
+### v0.0003
+
+- IPv4 addresses for computers
+- Manual IPv4 configuration
+- IPv4 validation
+- Duplicate IP detection
+- Same /24 subnet validation
+- Basic IPv4 LAN state
 
 ### v0.0002
 
