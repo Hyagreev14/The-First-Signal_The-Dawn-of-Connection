@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
+import ipaddress
 import random
 
 app = Flask(__name__)
@@ -10,7 +11,7 @@ def generate_mac():
 
 game_state = {
     "computers": [
-        {"id": 1, "mac": generate_mac(), "powered": False},
+        {"id": 1, "mac": generate_mac(), "powered": False, "ip": None},
     ],
     "ethernet_connected": False,
 }
@@ -45,7 +46,7 @@ def build_computer():
         return jsonify({"error": "Only two computers exist in v0.0002"}), 400
 
     game_state["computers"].append(
-        {"id": 2, "mac": generate_mac(), "powered": False}
+        {"id": 2, "mac": generate_mac(), "powered": False, "ip": None}
     )
     return jsonify(game_state)
 
@@ -59,6 +60,36 @@ def connect_ethernet():
         return jsonify({"error": "Both computers must be powered on"}), 400
 
     game_state["ethernet_connected"] = not game_state["ethernet_connected"]
+    return jsonify(game_state)
+
+
+@app.post("/api/configure-ip")
+def configure_ip():
+    if len(game_state["computers"]) < 2:
+        return jsonify({"error": "Build the second computer first"}), 400
+
+    values = []
+    for computer in game_state["computers"]:
+        raw_ip = request.form.get(f"ip_{computer['id']}", "").strip()
+
+        try:
+            address = ipaddress.IPv4Address(raw_ip)
+        except ipaddress.AddressValueError:
+            return jsonify({"error": f"Computer {computer['id']} has an invalid IPv4 address"}), 400
+
+        values.append(address)
+
+    if values[0] == values[1]:
+        return jsonify({"error": "Both computers cannot use the same IP address"}), 400
+
+    networks = [ipaddress.IPv4Network(f"{address}/24", strict=False) for address in values]
+
+    if networks[0] != networks[1]:
+        return jsonify({"error": "Both computers must be on the same /24 subnet"}), 400
+
+    for computer, address in zip(game_state["computers"], values):
+        computer["ip"] = str(address)
+
     return jsonify(game_state)
 
 
