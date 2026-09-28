@@ -43,6 +43,16 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _input(event: InputEvent) -> void:
+	# Error popups must take priority over text editors so their CLOSE button
+	# remains clickable even when the error was triggered while editing IPv4.
+	if error_popup_visible:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			error_popup_visible = false
+			editing_ip = false
+			editing_name = false
+			queue_redraw()
+		return
+
 	if editing_ip:
 		_handle_ip_input(event)
 		return
@@ -482,10 +492,12 @@ func _set_selected_ip() -> void:
 		_error("Cannot configure IPv4: computer is powered OFF.")
 		return
 	if not _valid_ipv4(ip_buffer):
+		editing_ip = false
 		_error("Cannot configure IPv4: invalid address.")
 		return
 	for d in devices:
 		if d.id != selected_id and d.ip == ip_buffer:
+			editing_ip = false
 			_error(ip_buffer + " is already in use.")
 			return
 	selected_device.ip = ip_buffer
