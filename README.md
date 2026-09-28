@@ -78,6 +78,17 @@ The project has moved from the early browser prototype into a native Godot game.
 - Configure IPv4 addresses
 - IPv4 validation and duplicate-address checks
 
+
+
+### v0.002 — Physical Ethernet Ports
+- Every computer starts with 1 physical Ethernet port.
+- Ethernet links now consume one port on each connected computer.
+- A computer cannot accept another link when all of its ports are occupied.
+- Ethernet ports can be purchased from the Network Supply Shop for $50 each.
+- Port delivery takes 3 seconds and installs the new port on the computer selected when the order is placed.
+- Ethernet cables remain separate inventory items and are consumed when links are created.
+- Inspection data shows total Ethernet ports and free ports.
+
 ### v0.002 — Economy, Controls & Testing
 
 - Network Supply Shop for ordering computers and Ethernet cables.
