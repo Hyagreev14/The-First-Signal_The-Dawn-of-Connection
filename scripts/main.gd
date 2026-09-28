@@ -2,10 +2,13 @@ extends Node2D
 
 const WORLD_SIZE := Vector2(2600, 1800)
 const DEVICE_SIZE := Vector2(170, 110)
-const CREATE_BUTTON := Rect2(24, 78, 190, 42)
+const SHOP_BUTTON := Rect2(24, 78, 190, 42)
+const SHOP_SIZE := Vector2(500, 430)
 const CURRENCY_START := 1000
 const COMPUTER_COST := 100
 const ETHERNET_COST := 25
+const COMPUTER_DELIVERY_TIME := 5.0
+const ETHERNET_DELIVERY_TIME := 2.0
 const REDEEM_BUTTON := Rect2(24, 128, 190, 36)
 const MENU_SIZE := Vector2(250, 240)
 
@@ -17,6 +20,9 @@ var redeeming := false
 var redeem_buffer := ""
 var first_link_reward_claimed := false
 var first_ipv4_reward_claimed := false
+var shop_open := false
+var deliveries: Array = []
+var ethernet_inventory := 0
 
 var ethernet_links: Array = []
 var selected_id := -1
@@ -77,6 +83,16 @@ func _input(event: InputEvent) -> void:
 	if paused:
 		return
 
+	if shop_open:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			var shop_action := _shop_action_at(event.position)
+			if shop_action != "":
+				_perform_shop_action(shop_action)
+			else:
+				shop_open = false
+				queue_redraw()
+		return
+
 	if redeeming:
 		_handle_redeem_input(event)
 		return
@@ -116,8 +132,9 @@ func _input(event: InputEvent) -> void:
 					connection_source_id = -1
 					queue_redraw()
 				return
-			if CREATE_BUTTON.has_point(event.position):
-				_create_computer()
+			if SHOP_BUTTON.has_point(event.position):
+				shop_open = true
+				queue_redraw()
 				return
 			if REDEEM_BUTTON.has_point(event.position):
 				_begin_redeem()
@@ -212,7 +229,7 @@ func _draw() -> void:
 	_draw_world(screen)
 	_draw_header(screen)
 	_draw_currency(screen)
-	_draw_build_button()
+	_draw_shop_button()
 	_draw_inspector(screen)
 	_draw_controls(screen)
 	if context_device_id != -1:
@@ -229,6 +246,8 @@ func _draw() -> void:
 		_draw_pause_overlay(screen)
 	if inspecting_id != -1:
 		_draw_inspect_panel(screen)
+	if shop_open:
+		_draw_shop(screen)
 	if error_popup_visible:
 		_draw_error_popup(screen)
 
