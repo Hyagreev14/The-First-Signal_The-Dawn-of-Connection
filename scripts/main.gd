@@ -180,12 +180,6 @@ func _input(event: InputEvent) -> void:
 			else:
 				_begin_ip_edit(selected_id)
 			return
-		elif shortcut_key == KEY_F7:
-			if selected_id == -1:
-				_error("Cannot inspect: no computer is selected.")
-			else:
-				_perform_inspector_action("inspect")
-			return
 		elif shortcut_key == KEY_HOME:
 			camera_offset = Vector2.ZERO
 			zoom = 0.9
@@ -341,9 +335,8 @@ func _draw_inspector(screen: Vector2) -> void:
 	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [F2]")
 	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [F3]")
 	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [F4]")
-	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [F7]")
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 486), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "HOME center   PgUp / PgDn zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 448), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 474), "HOME center   PgUp / PgDn zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
 
 func _draw_inspector_button(panel: Rect2, local_rect: Rect2, label: String) -> void:
 	var r := Rect2(panel.position + local_rect.position, local_rect.size)
@@ -360,7 +353,6 @@ func _inspector_action_at(screen_pos: Vector2) -> String:
 	if Rect2(140, 350, 112, 32).has_point(local): return "connect"
 	if Rect2(18, 388, 112, 32).has_point(local): return "rename"
 	if Rect2(140, 388, 112, 32).has_point(local): return "ip"
-	if Rect2(18, 426, 234, 32).has_point(local): return "inspect"
 	return ""
 
 func _perform_inspector_action(action: String) -> void:
@@ -415,6 +407,7 @@ func _draw_context_menu() -> void:
 	_context_item(menu, Rect2(8, 76, menu.size.x - 16, 34), "DISCONNECT ETHERNET" if _device_has_link(d.id) else "CONNECT ETHERNET", "disconnect" if _device_has_link(d.id) else "connect")
 	_context_item(menu, Rect2(8, 112, menu.size.x - 16, 34), "RENAME COMPUTER", "rename")
 	_context_item(menu, Rect2(8, 148, menu.size.x - 16, 34), "CONFIGURE IPv4", "ip")
+	_context_item(menu, Rect2(8, 184, menu.size.x - 16, 34), "INSPECT COMPUTER", "inspect")
 
 func _context_item(menu: Rect2, item: Rect2, label: String, action: String) -> void:
 	draw_rect(Rect2(menu.position + item.position, item.size), Color("#111b24"), true)
@@ -444,6 +437,8 @@ func _context_action_at(pos: Vector2) -> String:
 		return "rename"
 	if local.y >= 148 and local.y < 182:
 		return "ip"
+	if local.y >= 184 and local.y < 218:
+		return "inspect"
 	return ""
 
 func _perform_context_action(action: String) -> void:
@@ -479,6 +474,8 @@ func _perform_context_action(action: String) -> void:
 		_begin_name_edit(id)
 	elif action == "ip":
 		_begin_ip_edit(id)
+	elif action == "inspect":
+		_toast("Inspecting " + _get_device(id).name + ".")
 	queue_redraw()
 
 func _open_connection_menu(source_id: int) -> void:
