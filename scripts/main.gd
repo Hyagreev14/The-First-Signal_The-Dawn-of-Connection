@@ -19,6 +19,7 @@ var mouse_world := Vector2.ZERO
 var toast := ""
 var toast_time := 0.0
 var toast_is_error := false
+var last_error := ""
 var context_device_id := -1
 var context_position := Vector2.ZERO
 var connection_menu := false
@@ -216,6 +217,9 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 360), "Right-click for device actions", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
+	if last_error != "":
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 402), "LAST ERROR", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#d66a73"))
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 421), last_error, HORIZONTAL_ALIGNMENT_LEFT, 232, 10, Color("#ffb9bf"))
 
 func _field(panel: Rect2, label: String, value: String, y: float) -> void:
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
@@ -390,14 +394,19 @@ func _handle_ip_input(event: InputEvent) -> void:
 			if ip_buffer.length() < 15:
 				ip_buffer += char(event.unicode)
 				queue_redraw()
+			return
+		if event.unicode == 46:
+			if ip_buffer.length() < 15:
+				ip_buffer += "."
+				queue_redraw()
 
 func _set_selected_ip() -> void:
 	if selected_id == -1:
 		editing_ip = false
-		_toast("Cannot configure IPv4: no computer is selected.")
+		_error("Cannot configure IPv4: no computer is selected.")
 		return
 	if not _device_has_link(selected_id):
-		_toast("Cannot configure IPv4: no active Ethernet link.")
+		_error("Cannot configure IPv4: no active Ethernet link.")
 		return
 	var selected_device := _get_device(selected_id)
 	if not selected_device.powered:
@@ -510,6 +519,7 @@ func _toast(message: String) -> void:
 	queue_redraw()
 
 func _error(message: String) -> void:
+	last_error = message
 	toast = "ERROR: " + message
 	toast_is_error = true
 	toast_time = 4.0
