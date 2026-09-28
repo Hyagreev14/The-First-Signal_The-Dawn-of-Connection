@@ -158,10 +158,6 @@ func _input(event: InputEvent) -> void:
 	# Reliable single-key shortcuts. Ctrl/Alt combinations are handled poorly
 	# by some Windows keyboard layouts, so the game uses F-keys instead.
 	if event is InputEventKey and event.pressed and not event.echo:
-		# Temporary keyboard diagnostic: shows exactly what Godot receives.
-		if event.keycode == KEY_F2 or event.keycode == KEY_F5 or event.physical_keycode == KEY_F2 or event.physical_keycode == KEY_F5:
-			_show_keyboard_debug(event)
-			return
 		var shortcut_key: Key = event.keycode
 		if shortcut_key == KEY_NONE:
 			shortcut_key = event.physical_keycode
@@ -875,19 +871,6 @@ func _make_mac() -> String:
 	for i in 6:
 		parts.append("%02X" % randi_range(0, 255))
 	return ":".join(parts)
-
-func _show_keyboard_debug(event: InputEventKey) -> void:
-	var key_name := OS.get_keycode_string(event.keycode)
-	var physical_name := OS.get_keycode_string(event.physical_keycode)
-	var debug_text := "KEYBOARD DEBUG\n"
-	debug_text += "Keycode: " + key_name + "\n"
-	debug_text += "Physical: " + physical_name + "\n"
-	debug_text += "Unicode: " + str(event.unicode) + "\n"
-	debug_text += "Ctrl: " + str(event.ctrl_pressed) + "   Alt: " + str(event.alt_pressed) + "\n"
-	debug_text += "Shift: " + str(event.shift_pressed)
-	last_error = debug_text
-	error_popup_visible = true
-	queue_redraw()
 
 func _toast(message: String) -> void:
 	toast = message
