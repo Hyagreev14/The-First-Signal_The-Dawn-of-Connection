@@ -18,6 +18,7 @@ var zoom := 0.9
 var mouse_world := Vector2.ZERO
 var toast := ""
 var toast_time := 0.0
+var toast_is_error := false
 var context_device_id := -1
 var context_position := Vector2.ZERO
 var connection_menu := false
@@ -331,19 +332,19 @@ func _connect_ethernet(source_id: int, target_id: int) -> void:
 	var source := _get_device(source_id)
 	var target := _get_device(target_id)
 	if source.is_empty() or target.is_empty():
-		_toast("Cannot connect: device not found.")
+		_error("Cannot connect: device not found.")
 		return
 	if source_id == target_id:
-		_toast("Cannot connect: a computer cannot connect to itself.")
+		_error("Cannot connect: a computer cannot connect to itself.")
 		return
 	if not source.powered:
-		_toast("Cannot connect: " + source.name + " is powered OFF.")
+		_error("Cannot connect: " + source.name + " is powered OFF.")
 		return
 	if not target.powered:
-		_toast("Cannot connect: " + target.name + " is powered OFF.")
+		_error("Cannot connect: " + target.name + " is powered OFF.")
 		return
 	if ethernet_connected:
-		_toast("Cannot connect: the Ethernet cable is already in use. Disconnect it first.")
+		_error("Cannot connect: the Ethernet cable is already in use. Disconnect it first.")
 		return
 	ethernet_source_id = source_id
 	ethernet_target_id = target_id
@@ -359,10 +360,10 @@ func _disconnect_ethernet() -> void:
 func _begin_ip_edit(id: int) -> void:
 	var d := _get_device(id)
 	if d.is_empty():
-		_toast("Cannot configure IPv4: device not found.")
+		_error("Cannot configure IPv4: device not found.")
 		return
 	if not _device_has_link(id):
-		_toast("Cannot configure IPv4: no active Ethernet link.")
+		_error("Cannot configure IPv4: no active Ethernet link.")
 		return
 	if not d.powered:
 		_toast("Cannot configure IPv4: " + d.name + " is powered OFF.")
@@ -400,14 +401,14 @@ func _set_selected_ip() -> void:
 		return
 	var selected_device := _get_device(selected_id)
 	if not selected_device.powered:
-		_toast("Cannot configure IPv4: computer is powered OFF.")
+		_error("Cannot configure IPv4: computer is powered OFF.")
 		return
 	if not _valid_ipv4(ip_buffer):
-		_toast("Cannot configure IPv4: invalid address.")
+		_error("Cannot configure IPv4: invalid address.")
 		return
 	for d in devices:
 		if d.id != selected_id and d.ip == ip_buffer:
-			_toast("Cannot assign " + ip_buffer + ": address already in use.")
+			_error(ip_buffer + " is already in use.")
 			return
 	selected_device.ip = ip_buffer
 	editing_ip = false
@@ -415,10 +416,13 @@ func _set_selected_ip() -> void:
 	queue_redraw()
 
 func _draw_toast(screen: Vector2) -> void:
-	var box := Rect2(Vector2(24, screen.y - 104), Vector2(430, 38))
-	draw_rect(box, Color("#111922"), true)
-	draw_rect(box, Color("#344553"), false, 1)
-	draw_string(ThemeDB.fallback_font, box.position + Vector2(14, 24), toast, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#dce8ef"))
+	var box := Rect2(Vector2(24, screen.y - 108), Vector2(560, 46))
+	var fill := Color("#241417") if toast_is_error else Color("#111922")
+	var edge := Color("#a94d58") if toast_is_error else Color("#344553")
+	var text_color := Color("#ffb9bf") if toast_is_error else Color("#dce8ef")
+	draw_rect(box, fill, true)
+	draw_rect(box, edge, false, 1.0)
+	draw_string(ThemeDB.fallback_font, box.position + Vector2(14, 28), toast, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, text_color)
 
 func _create_computer() -> void:
 	var next_id := 1
@@ -443,7 +447,7 @@ func _create_computer() -> void:
 
 func _toggle_selected_power() -> void:
 	if selected_id == -1:
-		_toast("Cannot change power: no computer is selected.")
+		_error("Cannot change power: no computer is selected.")
 		return
 	var d := _get_device(selected_id)
 	d.powered = not d.powered
@@ -501,5 +505,12 @@ func _make_mac() -> String:
 
 func _toast(message: String) -> void:
 	toast = message
-	toast_time = 2.0
+	toast_is_error = false
+	toast_time = 2.5
+	queue_redraw()
+
+func _error(message: String) -> void:
+	toast = "ERROR: " + message
+	toast_is_error = true
+	toast_time = 4.0
 	queue_redraw()
