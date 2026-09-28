@@ -487,10 +487,14 @@ func _perform_context_action(action: String) -> void:
 
 func _open_connection_menu(source_id: int) -> void:
 	connection_source_id = source_id
-	context_position = Vector2(get_viewport_rect().size.x - 300, 500)
 	connection_menu = true
-	context_position.x = min(context_position.x, get_viewport_rect().size.x - MENU_SIZE.x - 10)
-	context_position.y = min(context_position.y, get_viewport_rect().size.y - MENU_SIZE.y - 64)
+	var source := _get_device(source_id)
+	var screen_pos := _world_to_screen(source.position)
+	var screen := get_viewport_rect().size
+	# Open beside the selected computer, then keep the menu fully on-screen.
+	context_position = screen_pos + Vector2(28, -20)
+	context_position.x = clamp(context_position.x, 10.0, screen.x - MENU_SIZE.x - 10.0)
+	context_position.y = clamp(context_position.y, 10.0, screen.y - MENU_SIZE.y - 64.0)
 	_toast("Choose which computer to connect to.")
 	queue_redraw()
 
