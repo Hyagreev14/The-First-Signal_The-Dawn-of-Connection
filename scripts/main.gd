@@ -549,15 +549,19 @@ func _draw_toast(screen: Vector2) -> void:
 	draw_string(ThemeDB.fallback_font, box.position + Vector2(14, 28), toast, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, text_color)
 
 func _draw_error_popup(screen: Vector2) -> void:
-	var popup := Rect2(Vector2(screen.x * 0.5 - 270, screen.y * 0.5 - 115), Vector2(540, 230))
+	var popup := Rect2(Vector2(screen.x * 0.5 - 270, screen.y * 0.5 - 125), Vector2(540, 250))
 	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.42), true)
 	draw_rect(popup.grow(5), Color(0.55, 0.12, 0.16, 0.16), true)
 	draw_rect(popup, Color("#10151c"), true)
 	draw_rect(popup, Color("#a94d58"), false, 2.0)
 	draw_rect(Rect2(popup.position, Vector2(popup.size.x, 48)), Color("#251419"), true)
 	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 31), "ERROR", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ff8791"))
-	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 86), last_error, HORIZONTAL_ALIGNMENT_LEFT, popup.size.x - 44, 14, Color("#edf2f5"))
-	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 142), "The action could not be completed.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8797a3"))
+
+	# Wrap long messages so they remain fully visible instead of being clipped.
+	var message_rect := Rect2(popup.position + Vector2(22, 62), Vector2(popup.size.x - 44, 72))
+	draw_multiline_string(ThemeDB.fallback_font, message_rect.position, last_error, HORIZONTAL_ALIGNMENT_LEFT, message_rect.size.x, 14, -1, Color("#edf2f5"))
+
+	draw_string(ThemeDB.fallback_font, popup.position + Vector2(22, 160), "The action could not be completed.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8797a3"))
 	var close_button := Rect2(popup.position.x + popup.size.x - 120, popup.position.y + popup.size.y - 54, 96, 34)
 	draw_rect(close_button, Color("#1b252e"), true)
 	draw_rect(close_button, Color("#52616d"), false, 1.0)
