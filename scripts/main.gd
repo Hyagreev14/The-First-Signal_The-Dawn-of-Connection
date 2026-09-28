@@ -199,8 +199,8 @@ func _draw() -> void:
 	var screen := get_viewport_rect().size
 	draw_rect(Rect2(Vector2.ZERO, screen), Color("#080b10"))
 	_draw_world(screen)
-	_draw_currency(screen)
 	_draw_header(screen)
+	_draw_currency(screen)
 	_draw_build_button()
 	_draw_inspector(screen)
 	_draw_controls(screen)
@@ -263,7 +263,7 @@ func _draw_world(screen: Vector2) -> void:
 		_draw_device(d)
 
 func _draw_currency(screen: Vector2) -> void:
-	var box := Rect2(screen.x - 300, 14, 120, 34)
+	var box := Rect2(screen.x - 330, 14, 130, 34)
 	draw_rect(box, Color("#111a22"), true)
 	draw_rect(box, Color("#3b5261"), false, 1.0)
 	draw_string(ThemeDB.fallback_font, box.position + Vector2(12, 22), "$ " + ("∞" if test_mode else str(money)), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#72efb1"))
