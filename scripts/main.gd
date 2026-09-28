@@ -487,11 +487,12 @@ func _perform_context_action(action: String) -> void:
 
 func _open_connection_menu(source_id: int) -> void:
 	connection_source_id = source_id
+	context_device_id = -1
 	connection_menu = true
 	var source := _get_device(source_id)
 	var screen_pos := _world_to_screen(source.position)
 	var screen := get_viewport_rect().size
-	# Open beside the selected computer, then keep the menu fully on-screen.
+	# Keyboard/inspector connection menus are independent of the RMB device menu.
 	context_position = screen_pos + Vector2(28, -20)
 	context_position.x = clamp(context_position.x, 10.0, screen.x - MENU_SIZE.x - 10.0)
 	context_position.y = clamp(context_position.y, 10.0, screen.y - MENU_SIZE.y - 64.0)
