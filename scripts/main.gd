@@ -487,7 +487,7 @@ func _perform_context_action(action: String) -> void:
 
 func _open_connection_menu(source_id: int) -> void:
 	connection_source_id = source_id
-	context_device_id = -1
+	context_device_id = source_id
 	connection_menu = true
 	var source := _get_device(source_id)
 	var screen_pos := _world_to_screen(source.position)
