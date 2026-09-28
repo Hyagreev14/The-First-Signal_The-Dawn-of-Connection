@@ -182,7 +182,7 @@ func _input(event: InputEvent) -> void:
 			else:
 				_begin_ip_edit(selected_id)
 			return
-		elif shortcut_key == KEY_F5:
+		elif shortcut_key == KEY_F9:
 			if selected_id == -1:
 				_error("Cannot inspect: no computer is selected.")
 			else:
