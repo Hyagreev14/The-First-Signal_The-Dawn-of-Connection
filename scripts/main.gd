@@ -133,6 +133,10 @@ func _draw() -> void:
 		_draw_context_menu()
 	if toast != "":
 		_draw_toast(screen)
+	if editing_ip:
+		_draw_ip_editor(screen)
+	if editing_name:
+		_draw_name_editor(screen)
 	if error_popup_visible:
 		_draw_error_popup(screen)
 
@@ -174,7 +178,7 @@ func _draw_world(screen: Vector2) -> void:
 		var pulse_forward := 0.5 + 0.5 * sin(time * 5.1 + 0.8)
 		var pulse_reverse := 0.5 + 0.5 * sin(time * 6.4 + 2.1)
 		draw_circle(pa.lerp(pb, forward_t), 5.0 + pulse_forward * 2.0, Color("#b8ffdc"))
-		draw_circle(pa.lerp(pb, reverse_t), 5.0 + pulse_reverse * 2.0, Color("#b8ffdc"))
+		draw_circle(pb.lerp(pa, reverse_t), 5.0 + pulse_reverse * 2.0, Color("#b8ffdc"))
 
 	for d in devices:
 		_draw_device(d)
@@ -275,7 +279,8 @@ func _draw_context_menu() -> void:
 
 	_context_item(menu, Rect2(8, 40, menu.size.x - 16, 34), "POWER " + ("OFF" if d.powered else "ON"), "power")
 	_context_item(menu, Rect2(8, 76, menu.size.x - 16, 34), "DISCONNECT ETHERNET" if _device_has_link(d.id) else "CONNECT ETHERNET", "disconnect" if _device_has_link(d.id) else "connect")
-	_context_item(menu, Rect2(8, 112, menu.size.x - 16, 34), "CONFIGURE IPv4", "ip")
+	_context_item(menu, Rect2(8, 112, menu.size.x - 16, 34), "RENAME COMPUTER", "rename")
+	_context_item(menu, Rect2(8, 148, menu.size.x - 16, 34), "CONFIGURE IPv4", "ip")
 
 func _context_item(menu: Rect2, item: Rect2, label: String, action: String) -> void:
 	draw_rect(Rect2(menu.position + item.position, item.size), Color("#111b24"), true)
@@ -300,7 +305,7 @@ func _context_action_at(pos: Vector2) -> String:
 	if local.y >= 40 and local.y < 74:
 		return "power"
 	if local.y >= 76 and local.y < 110:
-		return "connect"
+		return "disconnect" if _device_has_link(context_device_id) else "connect"
 	if local.y >= 112 and local.y < 146:
 		return "rename"
 	if local.y >= 148 and local.y < 182:
@@ -487,6 +492,33 @@ func _set_selected_ip() -> void:
 	editing_ip = false
 	_toast("IPv4 configured: " + ip_buffer)
 	queue_redraw()
+
+
+func _draw_ip_editor(screen: Vector2) -> void:
+	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.38), true)
+	draw_rect(panel, Color("#10171f"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 38), "CONFIGURE IPv4", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 67), "Enter an IPv4 address for the selected computer.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8194a1"))
+	var field := Rect2(panel.position + Vector2(24, 84), Vector2(panel.size.x - 48, 48))
+	draw_rect(field, Color("#071016"), true)
+	draw_rect(field, Color("#5ee6a8"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), ip_buffer + ("_" if fmod(Time.get_ticks_msec() / 400.0, 2.0) < 1.0 else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  APPLY     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+
+func _draw_name_editor(screen: Vector2) -> void:
+	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.38), true)
+	draw_rect(panel, Color("#10171f"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 38), "RENAME COMPUTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 67), "Enter a new name for the selected computer.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8194a1"))
+	var field := Rect2(panel.position + Vector2(24, 84), Vector2(panel.size.x - 48, 48))
+	draw_rect(field, Color("#071016"), true)
+	draw_rect(field, Color("#5ee6a8"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), name_buffer + ("_" if fmod(Time.get_ticks_msec() / 400.0, 2.0) < 1.0 else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  APPLY     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
 
 func _draw_toast(screen: Vector2) -> void:
 	var box := Rect2(Vector2(24, screen.y - 108), Vector2(560, 46))
