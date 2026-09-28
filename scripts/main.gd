@@ -6,6 +6,7 @@ const CREATE_BUTTON := Rect2(24, 78, 190, 42)
 const CURRENCY_START := 1000
 const COMPUTER_COST := 100
 const ETHERNET_COST := 25
+const REDEEM_BUTTON := Rect2(24, 128, 190, 36)
 const MENU_SIZE := Vector2(250, 240)
 
 var devices: Array = []
@@ -113,6 +114,13 @@ func _input(event: InputEvent) -> void:
 				return
 			if CREATE_BUTTON.has_point(event.position):
 				_create_computer()
+				return
+			if REDEEM_BUTTON.has_point(event.position):
+				_begin_redeem()
+				return
+			var inspector_action := _inspector_action_at(event.position)
+			if inspector_action != "":
+				_perform_inspector_action(inspector_action)
 				return
 			var hit := _device_at(mouse_world)
 			if hit != -1:
@@ -292,16 +300,19 @@ func _draw_header(screen: Vector2) -> void:
 	draw_line(Vector2(0, 64), Vector2(screen.x, 64), Color("#202b36"), 1)
 	draw_string(ThemeDB.fallback_font, Vector2(26, 29), "THE FIRST SIGNAL", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#edf5fa"))
 	draw_string(ThemeDB.fallback_font, Vector2(26, 49), "THE DAWN OF CONNECTION", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
-	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 190, 31), "SIMULATION  v0.001", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#6e8190"))
+	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 190, 31), "SIMULATION  v0.002", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#6e8190"))
 	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 190, 48), "WORLD ONLINE: %d DEVICES" % devices.size(), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#536675"))
 
 func _draw_build_button() -> void:
 	draw_rect(CREATE_BUTTON, Color("#111a22"), true)
 	draw_rect(CREATE_BUTTON, Color("#3b5261"), false, 1.0)
-	draw_string(ThemeDB.fallback_font, CREATE_BUTTON.position + Vector2(14, 27), "+  BUILD COMPUTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, CREATE_BUTTON.position + Vector2(14, 27), "+  BUILD COMPUTER  $100", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#dce8ef"))
+	draw_rect(REDEEM_BUTTON, Color("#111a22"), true)
+	draw_rect(REDEEM_BUTTON, Color("#3b5261"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, REDEEM_BUTTON.position + Vector2(14, 23), "REDEEM TEST CODE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#dce8ef"))
 
 func _draw_inspector(screen: Vector2) -> void:
-	var panel := Rect2(screen.x - 300, 82, 270, 430)
+	var panel := Rect2(screen.x - 300, 82, 270, 620)
 	draw_rect(panel, Color(0.035, 0.05, 0.07, 0.96), true)
 	draw_rect(panel, Color("#263541"), false, 1)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 28), "DEVICE INSPECTOR", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#728696"))
@@ -317,7 +328,44 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "IPv4", d.ip if d.ip != "" else "—", 218)
 	_field(panel, "LINK", "ETHERNET" if _device_has_link(d.id) else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 360), "Right-click for device actions", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
+	_draw_inspector_button(panel, Rect2(18, 350, 112, 32), "POWER  [Ctrl+P]")
+	_draw_inspector_button(panel, Rect2(140, 350, 112, 32), "CONNECT  [Ctrl+C]")
+	_draw_inspector_button(panel, Rect2(18, 388, 112, 32), "RENAME  [Ctrl+R]")
+	_draw_inspector_button(panel, Rect2(140, 388, 112, 32), "IPv4  [Ctrl+I]")
+	_draw_inspector_button(panel, Rect2(18, 426, 234, 32), "INSPECT  [Ctrl+E]")
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 486), "DELETE  [Del]     PAUSE  [Esc]", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#8fa2b0"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 512), "Ctrl+F center   Ctrl++ / Ctrl+- zoom", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#637684"))
+
+func _draw_inspector_button(panel: Rect2, local_rect: Rect2, label: String) -> void:
+	var r := Rect2(panel.position + local_rect.position, local_rect.size)
+	draw_rect(r, Color("#111b24"), true)
+	draw_rect(r, Color("#344553"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, r.position + Vector2(8, 21), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#d2e0e8"))
+
+func _inspector_action_at(screen_pos: Vector2) -> String:
+	if selected_id == -1:
+		return ""
+	var panel := Rect2(get_viewport_rect().size.x - 300, 82, 270, 620)
+	var local := screen_pos - panel.position
+	if Rect2(18, 350, 112, 32).has_point(local): return "power"
+	if Rect2(140, 350, 112, 32).has_point(local): return "connect"
+	if Rect2(18, 388, 112, 32).has_point(local): return "rename"
+	if Rect2(140, 388, 112, 32).has_point(local): return "ip"
+	if Rect2(18, 426, 234, 32).has_point(local): return "inspect"
+	return ""
+
+func _perform_inspector_action(action: String) -> void:
+	if action == "power":
+		_toggle_selected_power()
+	elif action == "connect":
+		_open_connection_menu(selected_id)
+	elif action == "rename":
+		_begin_name_edit(selected_id)
+	elif action == "ip":
+		_begin_ip_edit(selected_id)
+	elif action == "inspect":
+		_toast("Inspecting " + _get_device(selected_id).name + ".")
+	queue_redraw()
 
 func _field(panel: Rect2, label: String, value: String, y: float) -> void:
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
@@ -622,6 +670,56 @@ func _draw_name_editor(screen: Vector2) -> void:
 	draw_rect(field, Color("#5ee6a8"), false, 1.0)
 	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), name_buffer + ("_" if fmod(Time.get_ticks_msec() / 400.0, 2.0) < 1.0 else ""), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  APPLY     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+
+func _begin_redeem() -> void:
+	redeeming = true
+	redeem_buffer = ""
+	queue_redraw()
+
+func _handle_redeem_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			redeeming = false
+			queue_redraw()
+			return
+		if event.keycode == KEY_ENTER:
+			if redeem_buffer == "FIRSTSIGNAL-TEST":
+				test_mode = true
+				redeeming = false
+				_toast("TEST MODE ENABLED — Unlimited funds.")
+			else:
+				redeeming = false
+				_error("Invalid redeem code.")
+			queue_redraw()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			redeem_buffer = redeem_buffer.left(max(0, redeem_buffer.length() - 1))
+			queue_redraw()
+			return
+		if event.unicode >= 32 and event.unicode <= 126 and redeem_buffer.length() < 40:
+			redeem_buffer += char(event.unicode).to_upper()
+			queue_redraw()
+
+func _draw_redeem_editor(screen: Vector2) -> void:
+	var panel := Rect2(Vector2(screen.x * 0.5 - 300, screen.y * 0.5 - 105), Vector2(600, 210))
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.38), true)
+	draw_rect(panel, Color("#10171f"), true)
+	draw_rect(panel, Color("#4a5d6b"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 38), "REDEEM TEST CODE", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 67), "Development-only code for unlimited funds.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8194a1"))
+	var field := Rect2(panel.position + Vector2(24, 84), Vector2(panel.size.x - 48, 48))
+	draw_rect(field, Color("#071016"), true)
+	draw_rect(field, Color("#5ee6a8"), false, 1.0)
+	draw_string(ThemeDB.fallback_font, field.position + Vector2(14, 31), redeem_buffer, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#dce8ef"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 160), "ENTER  REDEEM     ESC  CANCEL", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+
+func _draw_pause_overlay(screen: Vector2) -> void:
+	draw_rect(Rect2(Vector2.ZERO, screen), Color(0.0, 0.0, 0.0, 0.48), true)
+	var panel := Rect2(Vector2(screen.x * 0.5 - 180, screen.y * 0.5 - 70), Vector2(360, 140))
+	draw_rect(panel, Color("#10151c"), true)
+	draw_rect(panel, Color("#52616d"), false, 2.0)
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 48), "SIMULATION PAUSED", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color("#edf5fa"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(24, 82), "Press ESC to resume.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8797a3"))
 
 func _draw_toast(screen: Vector2) -> void:
 	var box := Rect2(Vector2(24, screen.y - 108), Vector2(560, 46))
