@@ -18,9 +18,7 @@ var redeem_buffer := ""
 var first_link_reward_claimed := false
 var first_ipv4_reward_claimed := false
 
-var ethernet_connected := false
-var ethernet_source_id := -1
-var ethernet_target_id := -1
+var ethernet_links: Array = []
 var selected_id := -1
 var dragging_id := -1
 var drag_offset := Vector2.ZERO
@@ -251,24 +249,22 @@ func _draw_world(screen: Vector2) -> void:
 			draw_line(Vector2(0, y), Vector2(screen.x, y), Color(0.12, 0.16, 0.21, 0.75), 1.0)
 		y += spacing
 
-	if ethernet_connected:
-		var source := _get_device(ethernet_source_id)
-		var target := _get_device(ethernet_target_id)
+	for link in ethernet_links:
+		var source := _get_device(link.source_id)
+		var target := _get_device(link.target_id)
+		if source.is_empty() or target.is_empty():
+			continue
 		var a := _world_to_screen(source.position)
 		var b := _world_to_screen(target.position)
 		var pa := a + Vector2(DEVICE_SIZE.x * zoom * 0.5, 58 * zoom)
 		var pb := b + Vector2(DEVICE_SIZE.x * zoom * 0.5, 58 * zoom)
 		draw_line(pa, pb, Color("#18212c"), 10.0 * zoom, true)
 		draw_line(pa, pb, Color("#5ee6a8"), 3.0 * zoom, true)
-		# Each direction gets its own independent packet timing.
-		# This makes traffic look asynchronous rather than perfectly mirrored.
 		var time := Time.get_ticks_msec() / 1000.0
-		var forward_phase := fmod(time * 0.72 + 0.17, 1.0)
-		var reverse_phase := fmod(time * 0.91 + 0.61, 1.0)
-		var forward_t := forward_phase
-		var reverse_t := reverse_phase
-		var pulse_forward := 0.5 + 0.5 * sin(time * 5.1 + 0.8)
-		var pulse_reverse := 0.5 + 0.5 * sin(time * 6.4 + 2.1)
+		var forward_t := fmod(time * link.forward_speed + link.forward_offset, 1.0)
+		var reverse_t := fmod(time * link.reverse_speed + link.reverse_offset, 1.0)
+		var pulse_forward := 0.5 + 0.5 * sin(time * link.forward_pulse_speed + link.forward_pulse_offset)
+		var pulse_reverse := 0.5 + 0.5 * sin(time * link.reverse_pulse_speed + link.reverse_pulse_offset)
 		draw_circle(pa.lerp(pb, forward_t), 5.0 + pulse_forward * 2.0, Color("#b8ffdc"))
 		draw_circle(pb.lerp(pa, reverse_t), 5.0 + pulse_reverse * 2.0, Color("#b8ffdc"))
 
@@ -389,8 +385,8 @@ func _draw_controls(screen: Vector2) -> void:
 	draw_rect(bar, Color("#0a0e14"), true)
 	draw_line(Vector2(0, screen.y - 54), Vector2(screen.x, screen.y - 54), Color("#202b36"), 1)
 	draw_string(ThemeDB.fallback_font, Vector2(22, screen.y - 22), "LMB  SELECT / DRAG     RMB  DEVICE MENU     MMB  PAN     WHEEL  ZOOM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
-	var status := "ETHERNET LINK  ● CONNECTED" if ethernet_connected else "ETHERNET LINK  ○ OFFLINE"
-	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 270, screen.y - 22), status, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#72efb1") if ethernet_connected else Color("#718594"))
+	var status := "ETHERNET LINKS  ● %d ACTIVE" % ethernet_links.size() if ethernet_links.size() > 0 else "ETHERNET LINKS  ○ OFFLINE"
+	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 270, screen.y - 22), status, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#72efb1") if ethernet_links.size() > 0 else Color("#718594"))
 
 func _draw_context_menu() -> void:
 	var menu := Rect2(context_position, MENU_SIZE)
@@ -514,15 +510,25 @@ func _connect_ethernet(source_id: int, target_id: int) -> void:
 	if not target.powered:
 		_error("The destination computer, " + target.name + ", is powered off.")
 		return
-	if ethernet_connected:
-		_error("Cannot connect: the Ethernet cable is already in use. Disconnect it first.")
+	if _link_exists(source_id, target_id):
+		_error("Cannot connect: these computers already have an Ethernet link.")
 		return
 	if not test_mode and money < ETHERNET_COST:
 		_error("Cannot connect: insufficient funds. Ethernet cable cost: $%d." % ETHERNET_COST)
 		return
-	ethernet_source_id = source_id
-	ethernet_target_id = target_id
-	ethernet_connected = true
+	var link := {
+		"source_id": source_id,
+		"target_id": target_id,
+		"forward_speed": 0.72,
+		"forward_offset": randf(),
+		"reverse_speed": 0.91,
+		"reverse_offset": randf(),
+		"forward_pulse_speed": 5.1,
+		"forward_pulse_offset": randf() * TAU,
+		"reverse_pulse_speed": 6.4,
+		"reverse_pulse_offset": randf() * TAU
+	}
+	ethernet_links.append(link)
 	if not test_mode:
 		money -= ETHERNET_COST
 	if not first_link_reward_claimed:
@@ -531,13 +537,31 @@ func _connect_ethernet(source_id: int, target_id: int) -> void:
 			money += 150
 		_toast("Ethernet connected. First LAN job complete: +$150.")
 	else:
-		_toast("Ethernet connected: %s ↔ %s" % [_get_device(source_id).name, _get_device(target_id).name])
+		_toast("Ethernet connected: %s ↔ %s" % [source.name, target.name])
 
 func _disconnect_ethernet() -> void:
-	ethernet_connected = false
-	ethernet_source_id = -1
-	ethernet_target_id = -1
-	_toast("Ethernet disconnected.")
+	ethernet_links.clear()
+	_toast("All Ethernet links disconnected.")
+
+func _device_has_link(id: int) -> bool:
+	for link in ethernet_links:
+		if link.source_id == id or link.target_id == id:
+			return true
+	return false
+
+func _link_exists(a: int, b: int) -> bool:
+	for link in ethernet_links:
+		if (link.source_id == a and link.target_id == b) or (link.source_id == b and link.target_id == a):
+			return true
+	return false
+
+func _disconnect_device_links(id: int) -> void:
+	var kept: Array = []
+	for link in ethernet_links:
+		if link.source_id != id and link.target_id != id:
+			kept.append(link)
+	ethernet_links = kept
+	_toast("Ethernet links disconnected from " + _get_device(id).name + ".")
 
 func _begin_ip_edit(id: int) -> void:
 	var d := _get_device(id)
@@ -642,7 +666,6 @@ func _set_selected_ip() -> void:
 	if not _valid_ipv4_host_24(ip_buffer):
 		_error("Cannot configure IPv4: address cannot be a network or broadcast address.")
 		return
-	var other_id := ethernet_target_id if ethernet_source_id == selected_id else ethernet_source_id
 	if _device_has_link(selected_id) and other_id != -1:
 		var other_device := _get_device(other_id)
 		if not other_device.is_empty() and other_device.ip != "" and not _same_subnet_24(ip_buffer, other_device.ip):
@@ -800,8 +823,8 @@ func _toggle_selected_power() -> void:
 		return
 	var d := _get_device(selected_id)
 	d.powered = not d.powered
-	if not d.powered and (d.id == ethernet_source_id or d.id == ethernet_target_id):
-		_disconnect_ethernet()
+	if not d.powered and _device_has_link(d.id):
+		_disconnect_device_links(d.id)
 		_toast("Powered OFF " + d.name + " — Ethernet disconnected.")
 	else:
 		_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
@@ -812,14 +835,11 @@ func _delete_selected() -> void:
 		return
 	var d := _get_device(selected_id)
 	if _device_has_link(selected_id):
-		_disconnect_ethernet()
+		_disconnect_device_links(selected_id)
 	devices.erase(d)
 	_toast("Deleted " + d.name + ".")
 	selected_id = -1
 	queue_redraw()
-
-func _device_has_link(id: int) -> bool:
-	return ethernet_connected and (id == ethernet_source_id or id == ethernet_target_id)
 
 func _get_device(id: int) -> Dictionary:
 	for d in devices:
