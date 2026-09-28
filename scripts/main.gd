@@ -3,6 +3,7 @@ extends Node2D
 const WORLD_SIZE := Vector2(2600, 1800)
 const DEVICE_SIZE := Vector2(170, 110)
 const CREATE_BUTTON := Rect2(24, 78, 190, 42)
+const MENU_SIZE := Vector2(230, 190)
 
 var devices := [
 	{
@@ -12,7 +13,7 @@ var devices := [
 		"position": Vector2(330, 300),
 		"powered": false,
 		"mac": "",
-		"ip": ""
+		"ip": "192.168.0.2"
 	},
 	{
 		"id": 2,
@@ -21,7 +22,7 @@ var devices := [
 		"position": Vector2(650, 300),
 		"powered": false,
 		"mac": "",
-		"ip": ""
+		"ip": "192.168.0.3"
 	}
 ]
 
@@ -34,6 +35,10 @@ var zoom := 0.9
 var mouse_world := Vector2.ZERO
 var toast := ""
 var toast_time := 0.0
+var context_device_id := -1
+var context_position := Vector2.ZERO
+var editing_ip := false
+var ip_buffer := ""
 
 func _ready() -> void:
 	randomize()
@@ -50,6 +55,10 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _input(event: InputEvent) -> void:
+	if editing_ip:
+		_handle_ip_input(event)
+		return
+
 	if event is InputEventMouseMotion:
 		mouse_world = _screen_to_world(event.position)
 		if dragging_id != -1:
@@ -59,6 +68,14 @@ func _input(event: InputEvent) -> void:
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			if context_device_id != -1:
+				var action := _context_action_at(event.position)
+				if action != "":
+					_perform_context_action(action)
+				else:
+					context_device_id = -1
+					queue_redraw()
+				return
 			if CREATE_BUTTON.has_point(event.position):
 				_create_computer()
 				return
@@ -72,6 +89,19 @@ func _input(event: InputEvent) -> void:
 			queue_redraw()
 		else:
 			dragging_id = -1
+
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		var hit := _device_at(mouse_world)
+		if hit != -1:
+			selected_id = hit
+			context_device_id = hit
+			context_position = event.position
+			context_position.x = min(context_position.x, get_viewport_rect().size.x - MENU_SIZE.x - 10)
+			context_position.y = min(context_position.y, get_viewport_rect().size.y - MENU_SIZE.y - 64)
+			queue_redraw()
+		else:
+			context_device_id = -1
+			queue_redraw()
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 		_zoom_at(event.position, 1.1)
@@ -98,6 +128,8 @@ func _draw() -> void:
 	_draw_build_button()
 	_draw_inspector(screen)
 	_draw_controls(screen)
+	if context_device_id != -1:
+		_draw_context_menu()
 	if toast != "":
 		_draw_toast(screen)
 
@@ -181,7 +213,7 @@ func _draw_inspector(screen: Vector2) -> void:
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 28), "DEVICE INSPECTOR", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#728696"))
 	if selected_id == -1:
 		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 75), "Select a device", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#c7d4dc"))
-		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 101), "Drag devices to build your network.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#647785"))
+		draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 101), "Right-click a device for actions.", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#647785"))
 		return
 	var d := _get_device(selected_id)
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 72), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#eef6fa"))
@@ -191,8 +223,7 @@ func _draw_inspector(screen: Vector2) -> void:
 	_field(panel, "IPv4", d.ip if d.ip != "" else "—", 218)
 	_field(panel, "LINK", "ETHERNET" if ethernet_connected else "DISCONNECTED", 262)
 	_field(panel, "POSITION", "%d, %d" % [d.position.x, d.position.y], 306)
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 360), "P  toggle power", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
-	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 381), "F  center world", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
+	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, 360), "Right-click for device actions", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#8fa2b0"))
 
 func _field(panel: Rect2, label: String, value: String, y: float) -> void:
 	draw_string(ThemeDB.fallback_font, panel.position + Vector2(18, y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color("#596c7a"))
@@ -202,12 +233,113 @@ func _draw_controls(screen: Vector2) -> void:
 	var bar := Rect2(0, screen.y - 54, screen.x, 54)
 	draw_rect(bar, Color("#0a0e14"), true)
 	draw_line(Vector2(0, screen.y - 54), Vector2(screen.x, screen.y - 54), Color("#202b36"), 1)
-	draw_string(ThemeDB.fallback_font, Vector2(22, screen.y - 22), "LMB  SELECT / DRAG     MMB  PAN     WHEEL  ZOOM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
+	draw_string(ThemeDB.fallback_font, Vector2(22, screen.y - 22), "LMB  SELECT / DRAG     RMB  DEVICE MENU     MMB  PAN     WHEEL  ZOOM", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#718594"))
 	var status := "ETHERNET LINK  ● CONNECTED" if ethernet_connected else "ETHERNET LINK  ○ OFFLINE"
 	draw_string(ThemeDB.fallback_font, Vector2(screen.x - 270, screen.y - 22), status, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#72efb1") if ethernet_connected else Color("#718594"))
 
+func _draw_context_menu() -> void:
+	var menu := Rect2(context_position, MENU_SIZE)
+	draw_rect(menu, Color("#0c1219"), true)
+	draw_rect(menu, Color("#415462"), false, 1.0)
+	var d := _get_device(context_device_id)
+	draw_string(ThemeDB.fallback_font, menu.position + Vector2(14, 23), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#edf5fa"))
+	draw_line(menu.position + Vector2(12, 32), menu.position + Vector2(menu.size.x - 12, 32), Color("#273640"), 1)
+
+	_context_item(menu, Rect2(8, 40, menu.size.x - 16, 34), "POWER " + ("OFF" if d.powered else "ON"), "power")
+	_context_item(menu, Rect2(8, 76, menu.size.x - 16, 34), "CONNECT ETHERNET", "connect")
+	_context_item(menu, Rect2(8, 112, menu.size.x - 16, 34), "CONFIGURE IPv4", "ip")
+	_context_item(menu, Rect2(8, 148, menu.size.x - 16, 34), "DISCONNECT ETHERNET", "disconnect")
+
+func _context_item(menu: Rect2, item: Rect2, label: String, action: String) -> void:
+	draw_rect(Rect2(menu.position + item.position, item.size), Color("#111b24"), true)
+	draw_string(ThemeDB.fallback_font, menu.position + item.position + Vector2(12, 22), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#d2e0e8"))
+
+func _context_action_at(pos: Vector2) -> String:
+	var local := pos - context_position
+	if local.x < 8 or local.x > MENU_SIZE.x - 8:
+		return ""
+	if local.y >= 40 and local.y < 74:
+		return "power"
+	if local.y >= 76 and local.y < 110:
+		return "connect"
+	if local.y >= 112 and local.y < 146:
+		return "ip"
+	if local.y >= 148 and local.y < 182:
+		return "disconnect"
+	return ""
+
+func _perform_context_action(action: String) -> void:
+	var id := context_device_id
+	context_device_id = -1
+	selected_id = id
+	if action == "power":
+		_toggle_selected_power()
+	elif action == "connect":
+		_connect_ethernet(id)
+	elif action == "disconnect":
+		_disconnect_ethernet()
+	elif action == "ip":
+		_begin_ip_edit(id)
+	queue_redraw()
+
+func _connect_ethernet(id: int) -> void:
+	if not _get_device(id).powered:
+		_toast("Power on the computer before connecting.")
+		return
+	var other_id := _other_device_id(id)
+	if other_id == -1:
+		_toast("No second computer available.")
+		return
+	if not _get_device(other_id).powered:
+		_toast("Power on COMPUTER %02d first." % other_id)
+		return
+	ethernet_connected = true
+	_toast("Ethernet connected.")
+
+func _disconnect_ethernet() -> void:
+	ethernet_connected = false
+	_toast("Ethernet disconnected.")
+
+func _begin_ip_edit(id: int) -> void:
+	var d := _get_device(id)
+	ip_buffer = d.ip
+	editing_ip = true
+	_toast("Type IPv4 address, then press Enter. Esc cancels.")
+	queue_redraw()
+
+func _handle_ip_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			editing_ip = false
+			queue_redraw()
+			return
+		if event.keycode == KEY_ENTER:
+			_set_selected_ip()
+			return
+		if event.keycode == KEY_BACKSPACE:
+			ip_buffer = ip_buffer.left(max(0, ip_buffer.length() - 1))
+			queue_redraw()
+			return
+		if event.unicode >= 48 and event.unicode <= 57:
+			if ip_buffer.length() < 15:
+				ip_buffer += char(event.unicode)
+				queue_redraw()
+
+func _set_selected_ip() -> void:
+	if not _valid_ipv4(ip_buffer):
+		_toast("Invalid IPv4 address.")
+		return
+	for d in devices:
+		if d.id != selected_id and d.ip == ip_buffer:
+			_toast("That IPv4 address is already in use.")
+			return
+	_get_device(selected_id).ip = ip_buffer
+	editing_ip = false
+	_toast("IPv4 set to " + ip_buffer)
+	queue_redraw()
+
 func _draw_toast(screen: Vector2) -> void:
-	var box := Rect2(Vector2(24, screen.y - 104), Vector2(390, 38))
+	var box := Rect2(Vector2(24, screen.y - 104), Vector2(430, 38))
 	draw_rect(box, Color("#111922"), true)
 	draw_rect(box, Color("#344553"), false, 1)
 	draw_string(ThemeDB.fallback_font, box.position + Vector2(14, 24), toast, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#dce8ef"))
@@ -242,6 +374,12 @@ func _toggle_selected_power() -> void:
 		ethernet_connected = false
 	_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
 
+func _other_device_id(id: int) -> int:
+	for d in devices:
+		if d.id != id:
+			return d.id
+	return -1
+
 func _get_device(id: int) -> Dictionary:
 	for d in devices:
 		if d.id == id:
@@ -266,6 +404,18 @@ func _zoom_at(screen_pos: Vector2, factor: float) -> void:
 	var after := _screen_to_world(screen_pos)
 	camera_offset += (after - before) * zoom
 	queue_redraw()
+
+func _valid_ipv4(ip: String) -> bool:
+	var parts := ip.split(".")
+	if parts.size() != 4:
+		return false
+	for part in parts:
+		if part == "" or not part.is_valid_int():
+			return false
+		var value := int(part)
+		if value < 0 or value > 255:
+			return false
+	return true
 
 func _make_mac() -> String:
 	var parts := []
