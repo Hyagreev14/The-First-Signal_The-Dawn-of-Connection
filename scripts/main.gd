@@ -328,17 +328,22 @@ func _open_connection_menu(source_id: int) -> void:
 	queue_redraw()
 
 func _connect_ethernet(source_id: int, target_id: int) -> void:
+	var source := _get_device(source_id)
+	var target := _get_device(target_id)
+	if source.is_empty() or target.is_empty():
+		_toast("Cannot connect: device not found.")
+		return
 	if source_id == target_id:
-		_toast("A computer cannot connect to itself.")
+		_toast("Cannot connect: a computer cannot connect to itself.")
 		return
-	if not _get_device(source_id).powered:
-		_toast("Power on the source computer before connecting.")
+	if not source.powered:
+		_toast("Cannot connect: " + source.name + " is powered OFF.")
 		return
-	if not _get_device(target_id).powered:
-		_toast("Power on " + _get_device(target_id).name + " first.")
+	if not target.powered:
+		_toast("Cannot connect: " + target.name + " is powered OFF.")
 		return
 	if ethernet_connected:
-		_toast("This Ethernet cable is already connected. Disconnect it first.")
+		_toast("Cannot connect: the Ethernet cable is already in use. Disconnect it first.")
 		return
 	ethernet_source_id = source_id
 	ethernet_target_id = target_id
@@ -353,6 +358,15 @@ func _disconnect_ethernet() -> void:
 
 func _begin_ip_edit(id: int) -> void:
 	var d := _get_device(id)
+	if d.is_empty():
+		_toast("Cannot configure IPv4: device not found.")
+		return
+	if not _device_has_link(id):
+		_toast("Cannot configure IPv4: no active Ethernet link.")
+		return
+	if not d.powered:
+		_toast("Cannot configure IPv4: " + d.name + " is powered OFF.")
+		return
 	ip_buffer = d.ip
 	editing_ip = true
 	_toast("Type IPv4 address, then press Enter. Esc cancels.")
@@ -377,16 +391,27 @@ func _handle_ip_input(event: InputEvent) -> void:
 				queue_redraw()
 
 func _set_selected_ip() -> void:
+	if selected_id == -1:
+		editing_ip = false
+		_toast("Cannot configure IPv4: no computer is selected.")
+		return
+	if not _device_has_link(selected_id):
+		_toast("Cannot configure IPv4: no active Ethernet link.")
+		return
+	var selected_device := _get_device(selected_id)
+	if not selected_device.powered:
+		_toast("Cannot configure IPv4: computer is powered OFF.")
+		return
 	if not _valid_ipv4(ip_buffer):
-		_toast("Invalid IPv4 address.")
+		_toast("Cannot configure IPv4: invalid address.")
 		return
 	for d in devices:
 		if d.id != selected_id and d.ip == ip_buffer:
-			_toast("That IPv4 address is already in use.")
+			_toast("Cannot assign " + ip_buffer + ": address already in use.")
 			return
-	_get_device(selected_id).ip = ip_buffer
+	selected_device.ip = ip_buffer
 	editing_ip = false
-	_toast("IPv4 set to " + ip_buffer)
+	_toast("IPv4 configured: " + ip_buffer)
 	queue_redraw()
 
 func _draw_toast(screen: Vector2) -> void:
@@ -418,6 +443,7 @@ func _create_computer() -> void:
 
 func _toggle_selected_power() -> void:
 	if selected_id == -1:
+		_toast("Cannot change power: no computer is selected.")
 		return
 	var d := _get_device(selected_id)
 	d.powered = not d.powered
