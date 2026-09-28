@@ -3,7 +3,7 @@ extends Node2D
 const WORLD_SIZE := Vector2(2600, 1800)
 const DEVICE_SIZE := Vector2(170, 110)
 const CREATE_BUTTON := Rect2(24, 78, 190, 42)
-const MENU_SIZE := Vector2(230, 190)
+const MENU_SIZE := Vector2(250, 240)
 
 var devices := [
 	{
@@ -27,6 +27,8 @@ var devices := [
 ]
 
 var ethernet_connected := false
+var ethernet_source_id := -1
+var ethernet_target_id := -1
 var selected_id := 1
 var dragging_id := -1
 var drag_offset := Vector2.ZERO
@@ -37,6 +39,8 @@ var toast := ""
 var toast_time := 0.0
 var context_device_id := -1
 var context_position := Vector2.ZERO
+var connection_menu := false
+var connection_source_id := -1
 var editing_ip := false
 var ip_buffer := ""
 
@@ -74,6 +78,8 @@ func _input(event: InputEvent) -> void:
 					_perform_context_action(action)
 				else:
 					context_device_id = -1
+					connection_menu = false
+					connection_source_id = -1
 					queue_redraw()
 				return
 			if CREATE_BUTTON.has_point(event.position):
@@ -95,12 +101,16 @@ func _input(event: InputEvent) -> void:
 		if hit != -1:
 			selected_id = hit
 			context_device_id = hit
+			connection_menu = false
+			connection_source_id = -1
 			context_position = event.position
 			context_position.x = min(context_position.x, get_viewport_rect().size.x - MENU_SIZE.x - 10)
 			context_position.y = min(context_position.y, get_viewport_rect().size.y - MENU_SIZE.y - 64)
 			queue_redraw()
 		else:
 			context_device_id = -1
+			connection_menu = false
+			connection_source_id = -1
 			queue_redraw()
 
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
@@ -153,8 +163,10 @@ func _draw_world(screen: Vector2) -> void:
 		y += spacing
 
 	if ethernet_connected:
-		var a := _world_to_screen(_get_device(1).position)
-		var b := _world_to_screen(_get_device(2).position)
+		var source := _get_device(ethernet_source_id)
+		var target := _get_device(ethernet_target_id)
+		var a := _world_to_screen(source.position)
+		var b := _world_to_screen(target.position)
 		var pa := a + Vector2(DEVICE_SIZE.x * zoom * 0.5, 58 * zoom)
 		var pb := b + Vector2(DEVICE_SIZE.x * zoom * 0.5, 58 * zoom)
 		draw_line(pa, pb, Color("#18212c"), 10.0 * zoom, true)
@@ -241,6 +253,21 @@ func _draw_context_menu() -> void:
 	var menu := Rect2(context_position, MENU_SIZE)
 	draw_rect(menu, Color("#0c1219"), true)
 	draw_rect(menu, Color("#415462"), false, 1.0)
+
+	if connection_menu:
+		var source := _get_device(connection_source_id)
+		draw_string(ThemeDB.fallback_font, menu.position + Vector2(14, 23), "CONNECT FROM " + source.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#edf5fa"))
+		draw_line(menu.position + Vector2(12, 32), menu.position + Vector2(menu.size.x - 12, 32), Color("#273640"), 1)
+		var row := 42.0
+		for d in devices:
+			if d.id == connection_source_id:
+				continue
+			var action := "target:%d" % d.id
+			_context_item(menu, Rect2(8, row, menu.size.x - 16, 32), d.name, action)
+			row += 36.0
+		_context_item(menu, Rect2(8, menu.size.y - 40, menu.size.x - 16, 32), "CANCEL", "cancel_connect")
+		return
+
 	var d := _get_device(context_device_id)
 	draw_string(ThemeDB.fallback_font, menu.position + Vector2(14, 23), d.name, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#edf5fa"))
 	draw_line(menu.position + Vector2(12, 32), menu.position + Vector2(menu.size.x - 12, 32), Color("#273640"), 1)
@@ -258,6 +285,18 @@ func _context_action_at(pos: Vector2) -> String:
 	var local := pos - context_position
 	if local.x < 8 or local.x > MENU_SIZE.x - 8:
 		return ""
+	if connection_menu:
+		var row := 42.0
+		for d in devices:
+			if d.id == connection_source_id:
+				continue
+			if local.y >= row and local.y < row + 32.0:
+				return "target:%d" % d.id
+			row += 36.0
+		if local.y >= MENU_SIZE.y - 40 and local.y < MENU_SIZE.y - 8:
+			return "cancel_connect"
+		return ""
+
 	if local.y >= 40 and local.y < 74:
 		return "power"
 	if local.y >= 76 and local.y < 110:
@@ -269,35 +308,60 @@ func _context_action_at(pos: Vector2) -> String:
 	return ""
 
 func _perform_context_action(action: String) -> void:
+	if action == "connect":
+		_open_connection_menu(context_device_id)
+		return
+
 	var id := context_device_id
 	context_device_id = -1
 	selected_id = id
+
 	if action == "power":
 		_toggle_selected_power()
-	elif action == "connect":
-		_connect_ethernet(id)
 	elif action == "disconnect":
 		_disconnect_ethernet()
 	elif action == "ip":
 		_begin_ip_edit(id)
+	elif action == "cancel_connect":
+		connection_menu = false
+		connection_source_id = -1
 	queue_redraw()
 
-func _connect_ethernet(id: int) -> void:
-	if not _get_device(id).powered:
-		_toast("Power on the computer before connecting.")
+	if action.begins_with("target:"):
+		var target_id := int(action.trim_prefix("target:"))
+		_connect_ethernet(connection_source_id, target_id)
+		context_device_id = -1
+		connection_menu = false
+		connection_source_id = -1
+		queue_redraw()
+
+func _open_connection_menu(source_id: int) -> void:
+	connection_source_id = source_id
+	connection_menu = true
+	context_position.x = min(context_position.x, get_viewport_rect().size.x - MENU_SIZE.x - 10)
+	context_position.y = min(context_position.y, get_viewport_rect().size.y - MENU_SIZE.y - 64)
+	_toast("Choose which computer to connect to.")
+	queue_redraw()
+
+func _connect_ethernet(source_id: int, target_id: int) -> void:
+	if source_id == target_id:
+		_toast("A computer cannot connect to itself.")
 		return
-	var other_id := _other_device_id(id)
-	if other_id == -1:
-		_toast("No second computer available.")
+	if not _get_device(source_id).powered:
+		_toast("Power on the source computer before connecting.")
 		return
-	if not _get_device(other_id).powered:
-		_toast("Power on COMPUTER %02d first." % other_id)
+	if not _get_device(target_id).powered:
+		_toast("Power on " + _get_device(target_id).name + " first.")
 		return
+	ethernet_source_id = source_id
+	ethernet_target_id = target_id
 	ethernet_connected = true
-	_toast("Ethernet connected.")
+	_toast("Ethernet connected: %s ↔ %s" % [_get_device(source_id).name, _get_device(target_id).name])
 
 func _disconnect_ethernet() -> void:
 	ethernet_connected = false
+	ethernet_source_id = -1
+	ethernet_target_id = -1
 	_toast("Ethernet disconnected.")
 
 func _begin_ip_edit(id: int) -> void:
@@ -370,15 +434,11 @@ func _toggle_selected_power() -> void:
 		return
 	var d := _get_device(selected_id)
 	d.powered = not d.powered
-	if not d.powered:
-		ethernet_connected = false
-	_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
-
-func _other_device_id(id: int) -> int:
-	for d in devices:
-		if d.id != id:
-			return d.id
-	return -1
+	if not d.powered and (d.id == ethernet_source_id or d.id == ethernet_target_id):
+		_disconnect_ethernet()
+	_toast("Powered OFF " + d.name + " — Ethernet disconnected.")
+	else:
+		_toast(("Powered ON " if d.powered else "Powered OFF ") + d.name)
 
 func _get_device(id: int) -> Dictionary:
 	for d in devices:
