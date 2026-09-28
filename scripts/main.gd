@@ -58,7 +58,15 @@ func _process(delta: float) -> void:
 		toast_time -= delta
 		if toast_time <= 0.0:
 			toast = ""
-			queue_redraw()
+	for delivery in deliveries:
+		delivery.time_left = max(0.0, delivery.time_left - delta)
+	var completed: Array = []
+	for delivery in deliveries:
+		if delivery.time_left <= 0.0:
+			completed.append(delivery)
+	for delivery in completed:
+		_deliver_order(delivery)
+		deliveries.erase(delivery)
 	queue_redraw()
 
 func _input(event: InputEvent) -> void:
