@@ -1,6 +1,6 @@
 # The First Signal
 
-### Before we were connected.
+### The Dawn of Connection
 
 **The First Signal** is a network-building simulation game where you start with a single computer and build the connected world from the ground up.
 
