@@ -102,6 +102,8 @@ The project has moved from the early browser prototype into a native Godot game.
 - Development-only redeem code system for unlimited-funds testing
 - Test mode displays unlimited funds and bypasses economy costs
 - Existing right-click controls remain available as a secondary interaction method
+- Multiple independent Ethernet links can now exist at the same time
+- Ethernet packet animation runs independently for each active link
 
 More networking mechanics will be introduced gradually as development continues.
 
