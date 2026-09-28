@@ -267,9 +267,8 @@ func _draw_context_menu() -> void:
 	draw_line(menu.position + Vector2(12, 32), menu.position + Vector2(menu.size.x - 12, 32), Color("#273640"), 1)
 
 	_context_item(menu, Rect2(8, 40, menu.size.x - 16, 34), "POWER " + ("OFF" if d.powered else "ON"), "power")
-	_context_item(menu, Rect2(8, 76, menu.size.x - 16, 34), "CONNECT ETHERNET", "connect")
+	_context_item(menu, Rect2(8, 76, menu.size.x - 16, 34), "DISCONNECT ETHERNET" if _device_has_link(d.id) else "CONNECT ETHERNET", "disconnect" if _device_has_link(d.id) else "connect")
 	_context_item(menu, Rect2(8, 112, menu.size.x - 16, 34), "CONFIGURE IPv4", "ip")
-	_context_item(menu, Rect2(8, 148, menu.size.x - 16, 34), "DISCONNECT ETHERNET", "disconnect")
 
 func _context_item(menu: Rect2, item: Rect2, label: String, action: String) -> void:
 	draw_rect(Rect2(menu.position + item.position, item.size), Color("#111b24"), true)
