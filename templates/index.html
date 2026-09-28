@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The First Signal — v0.0002</title>
+    <title>The First Signal — v0.0003</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -13,7 +13,7 @@
                 <span class="eyebrow">THE FIRST SIGNAL</span>
                 <h1>The Dawn of Connection</h1>
             </div>
-            <span class="version">v0.0002</span>
+            <span class="version">v0.0003</span>
         </header>
 
         <section class="network-field" id="networkField">
@@ -25,6 +25,7 @@
                 <div class="computer-icon">▣</div>
                 <strong>COMPUTER {{ computer.id }}</strong>
                 <span class="status">OFFLINE</span>
+                <code class="ip-label">{{ computer.ip or "NO IP" }}</code>
             </div>
             {% endfor %}
         </section>
@@ -37,6 +38,12 @@
                 <span>COMPUTER {{ computer.id }} · MAC</span>
                 <code>{{ computer.mac }}</code>
             </div>
+            {% if game.computers|length > 1 %}
+            <div class="row">
+                <span>COMPUTER {{ computer.id }} · IPV4</span>
+                <code class="ip-value">{{ computer.ip or "UNCONFIGURED" }}</code>
+            </div>
+            {% endif %}
             {% endfor %}
 
             <div class="row">
@@ -59,7 +66,30 @@
             {% endif %}
         </div>
 
+        {% if game.computers|length > 1 %}
+        <section class="ip-panel">
+            <div class="panel-title">IP CONFIGURATION</div>
+            <form id="ipForm">
+                {% for computer in game.computers %}
+                <label>
+                    COMPUTER {{ computer.id }}
+                    <input
+                        name="ip_{{ computer.id }}"
+                        value="{{ computer.ip or ('192.168.0.' ~ computer.id + 1) }}"
+                        inputmode="decimal"
+                        autocomplete="off"
+                        maxlength="15"
+                    >
+                </label>
+                {% endfor %}
+                <button type="submit">APPLY IPV4</button>
+            </form>
+            <p class="message" id="message">Assign both computers an IPv4 address.</p>
+        </section>
+        {% else %}
         <p class="message" id="message">A second machine is waiting to exist.</p>
+        {% endif %}
+
         <footer>THE NETWORK BEGINS WITH YOU.</footer>
     </main>
     <script>window.__GAME_STATE__ = {{ game|tojson }};</script>
