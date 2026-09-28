@@ -80,9 +80,14 @@ The project has moved from the early browser prototype into a native Godot game.
 
 ### v0.002 — Economy, Controls & Testing
 
+- Network Supply Shop for ordering computers and Ethernet cables.
+- Computer deliveries take 5 seconds; Ethernet cable deliveries take 2 seconds.
+- Ethernet cables are delivered into inventory and consumed when making a connection.
+- Purchases are charged when ordered, and active deliveries show their remaining time.
+
 - Player starts with **$1000**
-- Building a computer costs **$100**
-- Connecting an Ethernet cable costs **$25**
+- Building a computer costs **$100** (ordered through the shop)
+- Ethernet cable costs **$25** (ordered through the shop)
 - First successful Ethernet connection rewards **$150**
 - First successful IPv4 configuration rewards **$50**
 - Currency HUD
