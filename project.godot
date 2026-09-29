@@ -1,6 +1,6 @@
 [application]
 config/name="The First Signal"
-config/description="The Dawn of Connection — a network-building simulation game."
+config/description="The Dawn of Connection — a first-person/third-person 3D network simulation game."
 run/main_scene="res://scenes/Main.tscn"
 
 [display]
@@ -16,11 +16,23 @@ renderer/rendering_method.mobile="gl_compatibility"
 textures/default_filters/use_nearest_mipmap_filter=false
 
 [input]
-toggle_power={
+move_forward={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":80,"unicode":112)]
+"events": [Object(InputEventKey,"physical_keycode":87,"unicode":119)]
 }
-center_world={
+move_backward={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":70,"unicode":102)]
+"events": [Object(InputEventKey,"physical_keycode":83,"unicode":115)]
+}
+move_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":65,"unicode":97)]
+}
+move_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":68,"unicode":100)]
+}
+jump={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":32,"unicode":32)]
 }
