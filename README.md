@@ -21,7 +21,7 @@ The networking isn't just the setting — **it's the game.**
 
 ## 🚧 Development
 
-**Current version:** `v0.002`
+**Current version:** `v0.003`
 
 The project has moved from the early browser prototype into a native Godot game.
 
@@ -136,3 +136,25 @@ The First Signal's source code is licensed under the MIT License.
 ---
 
 **The network begins with you.**
+
+
+### v0.003 — The 3D Simulator Pivot
+
+The project has now pivoted from the 2D network-management prototype into a **proper 3D first-person / third-person simulator**.
+
+- Real 3D world instead of a flat network canvas
+- First-person player movement with WASD
+- Sprint and jump movement
+- Mouse-look camera
+- Toggle between first-person and third-person with **V**
+- Physical network room with walls, floor, workbench, supply terminal, and server rack
+- Diegetic Network Supply Terminal that the player physically walks up to and uses
+- Physical computer objects that exist in the world
+- Computers can be powered on/off by interacting with them
+- Computers can be physically picked up and placed using **G**
+- Computer purchases still use the game's economy
+- Starting money remains **$1000**
+- Crosshair and contextual interaction prompts
+- The 3D layer is now the foundation for physical cables, ports, racks, routers, switches, servers, packets, and larger network infrastructure
+
+The old 2D simulation remains in the repository history as the prototype that established the networking rules. The new game is being rebuilt around **physical interaction and spatial simulation**, rather than turning the old dashboard into a 3D UI.
