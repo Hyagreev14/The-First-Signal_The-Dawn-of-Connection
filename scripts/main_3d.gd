@@ -37,7 +37,6 @@ func _ready() -> void:
     _build_player()
     _build_hud()
     Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-    queue_redraw()
 
 func _process(delta: float) -> void:
     if status_time > 0.0:
